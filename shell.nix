@@ -1,0 +1,62 @@
+{ pkgs ? import <nixpkgs> {} }:
+
+let unstable = import (builtins.fetchTarball {
+  url = "https://github.com/NixOS/nixpkgs/archive/nixos-unstable.tar.gz";
+}) { };
+
+in pkgs.mkShell {
+  buildInputs = with pkgs; [
+    go
+    gcc
+    glibc.dev
+    air
+    templ
+    sqlc
+    pgloader
+    sqlitebrowser
+    goose
+    # Use postgresql_17 from unstable overlay
+    (unstable.postgresql_17)
+  ];
+
+  shellHook = ''
+    export CGO_ENABLED=1
+    export PATH=$GOROOT/bin:$GOPATH/bin:$PATH
+  '';
+}
+
+
+
+
+
+
+
+# { pkgs? import <nixpkgs> {} }:
+#
+#
+# let unstable = import (builtins.fetchTarball {
+#   url = "https://github.com/NixOS/nixpkgs/archive/nixos-unstable.tar.gz";
+# }) { };
+#
+# pkgs.mkShell {
+#   buildInputs = with pkgs; [
+#     go
+#     gcc
+#     glibc.dev
+#
+#     # Golang extra
+#     pkgs.air
+#     pkgs.templ
+#     pkgs.sqlc
+#     pkgs.pgloader
+#     # pkgs.postgresql
+#     # pkgs.postgresql_16
+#     (unstable.postgresql_17)
+#     pkgs.sqlitebrowser
+#   ];
+#
+#   shellHook = ''
+#     export CGO_ENABLED=1
+#     export PATH=$GOROOT/bin:$GOPATH/bin:$PATH
+#   '';
+# }

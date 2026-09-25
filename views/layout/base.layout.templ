@@ -1,6 +1,6 @@
 package layout
 
-import "github.com/emarifer/go-echo-templ-htmx/views/partials"
+import "github.com/jus4/zero-climbing/views/partials"
 
 templ Base(title, username string, fromProtected, isError bool, errMsgs, sucMsgs []string) {
 	<!DOCTYPE html>
@@ -9,26 +9,27 @@ templ Base(title, username string, fromProtected, isError bool, errMsgs, sucMsgs
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 			<meta
- 				name="description"
- 				content="Go/Echo+Templ+Htmx: Full stack application using Golang's Echo framework & Templ templating language with user session management + CRUD to a SQLite database (To Do List) and HTMX in the frontend"
+				name="description"
+				content="Go/Echo+Templ+Htmx: Full stack application using Golang's Echo framework & Templ templating language with user session management + CRUD to a SQLite database (To Do List) and HTMX in the frontend"
 			/>
 			<meta name="google" content="notranslate"/>
 			<link rel="shortcut icon" href="/static/img/templ.png" type="image/png"/>
 			<link rel="stylesheet" href="/static/css/main.css" type="text/css"/>
-			<title>Todo List { title }</title>
+			<title>{ title }</title>
 			<script src="/static/js/htmx.min.js"></script>
 			<script src="/static/js/hyperscript.min.js"></script>
 			<script src="/static/js/sweetalert2.min.js"></script>
+			<script src="/static/js/map.js"></script>
 		</head>
-		<body class="sample-transition" hx-boost="true">
+		<body class="sample-transition min-h-screen flex flex-col" hx-boost="true">
 			<header>
 				if !isError {
 					@partials.Navbar(username, fromProtected)
 				}
 			</header>
-			<main class={ templ.KV("pt-40", !isError) }>
+			@partials.FlashMessages(errMsgs, sucMsgs)
+			<main class={ templ.KV("relative flex-1 pt-16", !isError) }>
 				{ children... }
-				@partials.FlashMessages(errMsgs, sucMsgs)
 			</main>
 		</body>
 	</html>

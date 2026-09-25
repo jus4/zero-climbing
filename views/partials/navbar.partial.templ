@@ -4,7 +4,7 @@ templ Navbar(username string, fromProtected bool) {
 	<nav class="navbar bg-primary text-primary-content fixed top-0 z-10">
 		<div class="navbar-start">
 			<a hx-swap="transition:true" class="btn btn-ghost text-xl" href="/">
-				Todo List
+				Zero Climbing
 			</a>
 		</div>
 		<div class="navbar-end">
@@ -12,12 +12,9 @@ templ Navbar(username string, fromProtected bool) {
 				<span class="font-bold text-indigo-700 mr-8">
 					{ username }
 				</span>
-				<a hx-swap="transition:true" class="btn btn-ghost text-lg" href="/todo/list">
-					Tasks
-				</a>
 				<button
  					hx-swap="transition:true"
- 					hx-post="/todo/logout"
+  					hx-post="/logout"
  					hx-confirm="Are you sure you want to log out?"
  					onClick="this.addEventListener('htmx:confirm', (e) => {
 						e.preventDefault()

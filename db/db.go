@@ -1,81 +1,43 @@
 package db
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
 	"log"
+	"os"
+	"time"
 
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type Store struct {
-	Db *sql.DB
-}
+func NewPgxPool() (*pgxpool.Pool, error) {
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		return nil, fmt.Errorf("DATABASE_URL not set")
+	}
 
-func NewStore(dbName string) (Store, error) {
-	Db, err := getConnection(dbName)
+	cfg, err := pgxpool.ParseConfig(dbURL)
 	if err != nil {
-		return Store{}, err
+		return nil, fmt.Errorf("parse config: %w", err)
 	}
 
-	if err := createMigrations(dbName, Db); err != nil {
-		return Store{}, err
-	}
+	cfg.MaxConns = 10
+	cfg.MinConns = 2
+	cfg.MaxConnLifetime = 30 * time.Minute
 
-	return Store{
-		Db,
-	}, nil
-}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
-func getConnection(dbName string) (*sql.DB, error) {
-	var (
-		err error
-		db  *sql.DB
-	)
-
-	if db != nil {
-		return db, nil
-	}
-
-	// Init SQLite3 database
-	db, err = sql.Open("sqlite3", dbName)
+	pool, err := pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {
-		// log.Fatalf("🔥 failed to connect to the database: %s", err.Error())
-		return nil, fmt.Errorf("🔥 failed to connect to the database: %s", err)
+		return nil, fmt.Errorf("create pool: %w", err)
 	}
 
-	log.Println("🚀 Connected Successfully to the Database")
-
-	return db, nil
-}
-
-func createMigrations(dbName string, db *sql.DB) error {
-	stmt := `CREATE TABLE IF NOT EXISTS users (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		email VARCHAR(255) NOT NULL UNIQUE,
-		password VARCHAR(255) NOT NULL,
-		username VARCHAR(64) NOT NULL
-	);`
-
-	_, err := db.Exec(stmt)
-	if err != nil {
-		return err
+	if err := pool.Ping(ctx); err != nil {
+		pool.Close()
+		return nil, fmt.Errorf("ping: %w", err)
 	}
 
-	stmt = `CREATE TABLE IF NOT EXISTS todos (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		created_by INTEGER NOT NULL,
-		title VARCHAR(64) NOT NULL,
-		description VARCHAR(255) NULL,
-		status BOOLEAN DEFAULT(FALSE),
-		created_at DATETIME default CURRENT_TIMESTAMP,
-		FOREIGN KEY(created_by) REFERENCES users(id)
-	);`
-
-	_, err = db.Exec(stmt)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	log.Println("Connected to PostgreSQL")
+	return pool, nil
 }

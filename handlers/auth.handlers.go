@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/emarifer/go-echo-templ-htmx/services"
-	"github.com/emarifer/go-echo-templ-htmx/views/auth_views"
+	"github.com/jus4/zero-climbing/services"
+	"github.com/jus4/zero-climbing/views/auth_views"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/a-h/templ"
@@ -20,20 +20,16 @@ const (
 	auth_sessions_key string = "authenticate-sessions"
 	auth_key          string = "authenticated"
 	user_id_key       string = "user_id"
-	username_key      string = "username"
+	alias_key         string = "alias"
 	tzone_key         string = "time_zone"
 )
-
-/********** Handlers for Auth Views **********/
 
 type AuthService interface {
 	CreateUser(u services.User) error
 	CheckEmail(email string) (services.User, error)
-	// GetUserById(id int) (services.User, error)
 }
 
 func NewAuthHandler(us AuthService) *AuthHandler {
-
 	return &AuthHandler{
 		UserServices: us,
 	}
@@ -49,9 +45,7 @@ func (ah *AuthHandler) homeHandler(c echo.Context) error {
 		return errors.New("invalid type for key 'FROMPROTECTED'")
 	}
 	homeView := auth_views.Home(fromProtected)
-	// isError = false
 	c.Set("ISERROR", false)
-	// fmt.Printf("\033[31mFROMPROTECTED = %t\n\033[0m", fromProtected)
 
 	return renderView(c, auth_views.HomeIndex(
 		"| Home",
@@ -70,19 +64,18 @@ func (ah *AuthHandler) registerHandler(c echo.Context) error {
 		return errors.New("invalid type for key 'FROMPROTECTED'")
 	}
 	registerView := auth_views.Register(fromProtected)
-	// isError = false
 	c.Set("ISERROR", false)
 
 	if c.Request().Method == "POST" {
 		user := services.User{
 			Email:    c.FormValue("email"),
 			Password: c.FormValue("password"),
-			Username: c.FormValue("username"),
+			Alias:    c.FormValue("username"),
 		}
 
 		err := ah.UserServices.CreateUser(user)
 		if err != nil {
-			if strings.Contains(err.Error(), "UNIQUE constraint failed") {
+			if strings.Contains(err.Error(), "unique constraint") || strings.Contains(err.Error(), "duplicate key") {
 				err = errors.New("the email is already in use")
 				setFlashmessages(c, "error", fmt.Sprintf(
 					"something went wrong: %s",
@@ -122,17 +115,14 @@ func (ah *AuthHandler) loginHandler(c echo.Context) error {
 		return errors.New("invalid type for key 'FROMPROTECTED'")
 	}
 	loginView := auth_views.Login(fromProtected)
-	// isError = false
 	c.Set("ISERROR", false)
 
 	if c.Request().Method == "POST" {
-		// obtaining the time zone from the POST request of the login form
 		tzone := ""
 		if len(c.Request().Header["X-Timezone"]) != 0 {
 			tzone = c.Request().Header["X-Timezone"][0]
 		}
 
-		// Authentication goes here
 		user, err := ah.UserServices.CheckEmail(c.FormValue("email"))
 		if err != nil {
 			if strings.Contains(err.Error(), "no rows in result set") {
@@ -154,33 +144,29 @@ func (ah *AuthHandler) loginHandler(c echo.Context) error {
 			[]byte(c.FormValue("password")),
 		)
 		if err != nil {
-			// In production you have to give the user a generic message
 			setFlashmessages(c, "error", "Incorrect password")
 
 			return c.Redirect(http.StatusSeeOther, "/login")
 		}
 
-		// Get Session and setting Cookies
 		sess, _ := session.Get(auth_sessions_key, c)
 		sess.Options = &sessions.Options{
 			Path:     "/",
-			MaxAge:   3600, // in seconds
+			MaxAge:   3600,
 			HttpOnly: true,
 		}
 
-		// Set user as authenticated, their username,
-		// their ID and the client's time zone
 		sess.Values = map[interface{}]interface{}{
-			auth_key:     true,
-			user_id_key:  user.ID,
-			username_key: user.Username,
-			tzone_key:    tzone,
+			auth_key:    true,
+			user_id_key: user.ID,
+			alias_key:   user.Alias,
+			tzone_key:   tzone,
 		}
 		sess.Save(c.Request(), c.Response())
 
 		setFlashmessages(c, "success", "You have successfully logged in!!")
 
-		return c.Redirect(http.StatusSeeOther, "/todo/list")
+		return c.Redirect(http.StatusSeeOther, "/")
 	}
 
 	return renderView(c, auth_views.LoginIndex(
@@ -198,7 +184,6 @@ func (ah *AuthHandler) flagsMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		sess, _ := session.Get(auth_sessions_key, c)
 		if auth, ok := sess.Values[auth_key].(bool); !ok || !auth {
-			// fmt.Printf("\033[36m Ok=%t, Auth=%t \n\033[0m", ok, auth)
 			c.Set("FROMPROTECTED", false)
 
 			return next(c)
@@ -214,30 +199,44 @@ func (ah *AuthHandler) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		sess, _ := session.Get(auth_sessions_key, c)
 		if auth, ok := sess.Values[auth_key].(bool); !ok || !auth {
-			// fmt.Printf("\033[36m Ok=%t, Auth=%t \n\033[0m", ok, auth)
-			// fromProtected = false
 			c.Set("FROMPROTECTED", false)
 
 			return echo.NewHTTPError(echo.ErrUnauthorized.Code, "Please provide valid credentials")
 		}
 
-		if userId, ok := sess.Values[user_id_key].(int); ok && userId != 0 {
-			c.Set(user_id_key, userId) // set the user_id in the context
+		if userId, ok := sess.Values[user_id_key].(int64); ok && userId != 0 {
+			c.Set(user_id_key, userId)
 		}
 
-		if username, ok := sess.Values[username_key].(string); ok && len(username) != 0 {
-			c.Set(username_key, username) // set the username in the context
+		if alias, ok := sess.Values[alias_key].(string); ok && len(alias) != 0 {
+			c.Set(alias_key, alias)
 		}
 
 		if tzone, ok := sess.Values[tzone_key].(string); ok && len(tzone) != 0 {
-			c.Set(tzone_key, tzone) // set the client's time zone in the context
+			c.Set(tzone_key, tzone)
 		}
 
-		// fromProtected = true
 		c.Set("FROMPROTECTED", true)
 
 		return next(c)
 	}
+}
+
+func (ah *AuthHandler) logoutHandler(c echo.Context) error {
+	sess, _ := session.Get(auth_sessions_key, c)
+	sess.Values = map[interface{}]interface{}{
+		auth_key:    false,
+		user_id_key: "",
+		alias_key:   "",
+		tzone_key:   "",
+	}
+	sess.Save(c.Request(), c.Response())
+
+	setFlashmessages(c, "success", "You have successfully logged out!!")
+
+	c.Set("FROMPROTECTED", false)
+
+	return c.Redirect(http.StatusSeeOther, "/login")
 }
 
 func renderView(c echo.Context, cmp templ.Component) error {

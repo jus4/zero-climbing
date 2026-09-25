@@ -1,0 +1,26 @@
+{
+  "name": "zero-climbing-js",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "esbuild src/map.ts --bundle --minify --outfile=../assets/js/map.js",
+    "watch": "esbuild src/map.ts --bundle --watch --outfile=../assets/js/map.js",
+    "dev": "concurrently -n esbuild,livereload \"esbuild src/map.ts --bundle --watch --outfile=../assets/js/map.js\" \"livereload ../assets/js -d\"",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "concurrently": "^9.1.0",
+    "esbuild": "^0.25.0",
+    "eslint": "^9.0.0",
+    "livereload": "^0.9.3",
+    "typescript": "^5.7.0",
+    "typescript-eslint": "^8.0.0"
+  },
+  "dependencies": {
+    "ol": "^10.9.0",
+    "proj4": "^2.20.9"
+  }
+}
