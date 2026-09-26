@@ -1,0 +1,140 @@
+package auth_views
+
+import "github.com/jus4/zero-climbing/views/layout"
+import "github.com/jus4/zero-climbing/services"
+import "strconv"
+
+templ ImportForm(fromProtected bool) {
+	<section class="max-w-2xl mx-auto mt-12 px-8">
+		<h1 class="text-2xl font-bold mb-2">
+			Import map data
+		</h1>
+		<p class="text-slate-500 mb-6">
+			Upload a GPX file or a SQLite database. The file will be parsed and you can choose which items to import.
+		</p>
+		<form
+ 			hx-boost="false"
+ 			action="/import"
+ 			method="post"
+ 			enctype="multipart/form-data"
+ 			class="card bg-white border border-slate-200 shadow-sm"
+ 		>
+			<div class="card-body gap-6">
+				<div>
+					<label class="font-medium" for="file">
+						File
+					</label>
+					<input
+ 						id="file"
+ 						type="file"
+ 						name="file"
+ 						accept=".gpx,.db,.sqlite,.sqlite3"
+ 						class="file-input file-input-bordered w-full mt-2"
+ 						required
+ 					/>
+					<p class="text-xs text-slate-400 mt-2">
+						Supported: GPX tracks (.gpx) and SQLite databases (.db / .sqlite) containing a <code>place</code> table.
+					</p>
+				</div>
+				<div class="card-actions justify-end">
+					<button type="submit" class="btn btn-neutral w-full">
+						Parse file
+					</button>
+				</div>
+			</div>
+		</form>
+	</section>
+}
+
+templ ImportPreview(token string, candidates []services.ImportCandidate) {
+	<section class="max-w-4xl mx-auto mt-12 px-8">
+		<h1 class="text-2xl font-bold mb-2">
+			Review your import
+		</h1>
+		<p class="text-slate-500 mb-6">
+			Select the items you want to save ({ len(candidates) } found).
+		</p>
+		<form
+ 			hx-boost="false"
+ 			action="/import/confirm"
+ 			method="post"
+ 			class="card bg-white border border-slate-200 shadow-sm"
+ 		>
+			<input type="hidden" name="token" value={ token }/>
+			<div class="card-body gap-6">
+				<div class="overflow-x-auto">
+					<table class="table table-sm">
+						<thead>
+							<tr>
+								<th>
+									<input
+ 										type="checkbox"
+ 										class="checkbox checkbox-sm"
+ 										_="on change set input[name='selected'] .checked to my.checked"
+ 									/>
+								</th>
+								<th>Type</th>
+								<th>Title</th>
+								<th>Description</th>
+								<th>Details</th>
+							</tr>
+						</thead>
+						<tbody>
+							for _, candidate := range candidates {
+								<tr>
+									<td>
+										<input type="checkbox" name="selected" value={ strconv.Itoa(candidate.Index) } class="checkbox checkbox-sm" checked/>
+									</td>
+									<td>
+										if candidate.Type == "line" {
+											<span class="badge badge-outline">Line</span>
+										} else {
+											<span class="badge badge-outline">Point</span>
+										}
+									</td>
+									<td class="font-medium">{ candidate.Title }</td>
+									<td class="text-slate-500">{ candidate.Description }</td>
+									<td class="text-slate-500">{ candidate.Details }</td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
+				<div class="card-actions justify-end">
+					<a class="btn btn-ghost" href="/import">
+						Back
+					</a>
+					<button type="submit" class="btn btn-neutral">
+						Import selected
+					</button>
+				</div>
+			</div>
+		</form>
+	</section>
+}
+
+templ ImportFormIndex(
+	title,
+	username string,
+	fromProtected,
+	isError bool,
+	errMsgs, sucMsgs []string,
+	cmp templ.Component,
+) {
+	@layout.Base(title, username, fromProtected, isError, errMsgs, sucMsgs) {
+		@cmp
+	}
+}
+
+templ ImportPreviewIndex(
+	title,
+	username string,
+	fromProtected,
+	isError bool,
+	errMsgs, sucMsgs []string,
+	cmp templ.Component,
+) {
+	@layout.Base(title, username, fromProtected, isError, errMsgs, sucMsgs) {
+		@cmp
+	}
+}

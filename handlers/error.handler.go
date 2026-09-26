@@ -31,17 +31,21 @@ func CustomHTTPErrorHandler(err error, c echo.Context) {
 		errorPage = errors_pages.Error404
 	case 500:
 		errorPage = errors_pages.Error500
+	default:
+		errorPage = errors_pages.Error500
 	}
 
 	// isError = true
 	c.Set("ISERROR", true)
 
+	fromProtected, _ := c.Get("FROMPROTECTED").(bool)
+
 	renderView(c, errors_pages.ErrorIndex(
 		fmt.Sprintf("| Error (%d)", code),
 		"",
-		c.Get("FROMPROTECTED").(bool),
+		fromProtected,
 		c.Get("ISERROR").(bool),
-		errorPage(c.Get("FROMPROTECTED").(bool)),
+		errorPage(fromProtected),
 	))
 }
 

@@ -3,45 +3,45 @@ package auth_views
 import "github.com/jus4/zero-climbing/views/layout"
 
 templ Login(fromProtected bool) {
-	<section class="card w-fit bg-base-200 shadow-xl mx-auto mb-8">
+<section class="card w-fit bg-white border border-slate-200 shadow-sm mx-auto mb-8">
 		<div class="card-body pb-2">
-			<h1 class="card-title border-b border-b-slate-600 pb-[4px]">
+			<h1 class="card-title border-b border-b-slate-200 pb-[4px]">
 				Log In
 			</h1>
 			<form
  				hx-swap="transition:true"
  				hx-headers="js:{'X-TimeZone': Intl.DateTimeFormat().resolvedOptions().timeZone}"
- 				class="rounded-xl drop-shadow-xl flex flex-col gap-4 w-96 p-8"
+ 				class="rounded-xl flex flex-col gap-4 w-96 p-8"
  				action=""
  				method="post"
-			>
-				<label class="flex flex-col justify-start gap-2">
-					Email:
-					<input
- 						class="input input-bordered input-primary bg-slate-800"
+ 			>
+ 				<label class="flex flex-col justify-start gap-2">
+ 					Email:
+ 					<input
+ 						class="input input-bordered bg-white"
  						type="email"
  						name="email"
  						required
  						autofocus
  						disabled?={ fromProtected }
  						if fromProtected {
-							value="disabled"
-						}
-					/>
-				</label>
-				<label class="flex flex-col justify-start gap-2 relative">
-					Password:
-					<input
- 						class="input input-bordered input-primary bg-slate-800"
+ 							value="disabled"
+ 						}
+ 					/>
+ 				</label>
+ 				<label class="flex flex-col justify-start gap-2 relative">
+ 					Password:
+ 					<input
+ 						class="input input-bordered bg-white"
  						type="password"
  						name="password"
  						required
  						minlength="6"
  						disabled?={ fromProtected }
  						if fromProtected {
-							value="disabled"
-						}
-					/>
+ 							value="disabled"
+ 						}
+ 					/>
 					<button
  						title="View password"
  						type="button"
@@ -60,7 +60,7 @@ templ Login(fromProtected bool) {
 					</button>
 				</label>
 				<footer class="card-actions justify-end">
-					<button class="badge badge-primary px-6 py-4 hover:scale-[1.1]" disabled?={ fromProtected }>
+					<button class="btn btn-neutral" disabled?={ fromProtected }>
 						Sign In
 					</button>
 				</footer>

@@ -183,6 +183,18 @@ func (ah *AuthHandler) loginHandler(c echo.Context) error {
 func (ah *AuthHandler) flagsMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		sess, _ := session.Get(auth_sessions_key, c)
+
+		if sess.IsNew {
+			sess.Options = &sessions.Options{
+				Path:     "/",
+				HttpOnly: true,
+				SameSite: http.SameSiteLaxMode,
+			}
+			if err := sess.Save(c.Request(), c.Response()); err != nil {
+				c.Logger().Error(err)
+			}
+		}
+
 		if auth, ok := sess.Values[auth_key].(bool); !ok || !auth {
 			c.Set("FROMPROTECTED", false)
 
