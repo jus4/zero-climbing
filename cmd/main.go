@@ -43,7 +43,11 @@ func main() {
 	us := services.NewUserServices(queries)
 	ah := handlers.NewAuthHandler(us)
 
-	handlers.SetupRoutes(e, ah)
+	ls := services.NewLocationServices(pool, queries)
+	ih := handlers.NewImportHandler(ls)
+	lh := handlers.NewLocationHandler(ls)
+
+	handlers.SetupRoutes(e, ah, ih, lh)
 
 	e.Logger.Fatal(e.Start(":8082"))
 }

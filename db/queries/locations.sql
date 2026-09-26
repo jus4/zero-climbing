@@ -6,6 +6,12 @@ RETURNING *;
 -- name: GetLocationsByUserID :many
 SELECT * FROM locations WHERE user_id = $1 ORDER BY created_at DESC;
 
+-- name: GetPointLocations :many
+SELECT l.*, u.alias
+FROM locations l
+JOIN users u ON u.id = l.user_id
+WHERE l.geojson->>'type' = 'Point';
+
 -- name: GetLocationByID :one
 SELECT * FROM locations WHERE id = $1 LIMIT 1;
 
