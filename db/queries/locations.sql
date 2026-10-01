@@ -15,5 +15,10 @@ WHERE l.geojson->>'type' = 'Point';
 -- name: GetLocationByID :one
 SELECT * FROM locations WHERE id = $1 LIMIT 1;
 
--- name: DeleteLocation :exec
+-- name: DeleteLocation :execrows
 DELETE FROM locations WHERE id = $1 AND user_id = $2;
+
+-- name: UpdateLocation :one
+UPDATE locations SET title = $3, description = $4
+WHERE id = $1 AND user_id = $2
+RETURNING *;
