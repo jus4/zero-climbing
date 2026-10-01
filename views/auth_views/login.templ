@@ -3,51 +3,51 @@ package auth_views
 import "github.com/jus4/zero-climbing/views/layout"
 
 templ Login(fromProtected bool) {
-<section class="card w-fit bg-white border border-slate-200 shadow-sm mx-auto mb-8">
+	<section class="card w-fit bg-white border border-slate-200 shadow-sm mx-auto mb-8 mt-8">
 		<div class="card-body pb-2">
 			<h1 class="card-title border-b border-b-slate-200 pb-[4px]">
 				Log In
 			</h1>
 			<form
- 				hx-swap="transition:true"
- 				hx-headers="js:{'X-TimeZone': Intl.DateTimeFormat().resolvedOptions().timeZone}"
- 				class="rounded-xl flex flex-col gap-4 w-96 p-8"
- 				action=""
- 				method="post"
- 			>
- 				<label class="flex flex-col justify-start gap-2">
- 					Email:
- 					<input
- 						class="input input-bordered bg-white"
- 						type="email"
- 						name="email"
- 						required
- 						autofocus
- 						disabled?={ fromProtected }
- 						if fromProtected {
- 							value="disabled"
- 						}
- 					/>
- 				</label>
- 				<label class="flex flex-col justify-start gap-2 relative">
- 					Password:
- 					<input
- 						class="input input-bordered bg-white"
- 						type="password"
- 						name="password"
- 						required
- 						minlength="6"
- 						disabled?={ fromProtected }
- 						if fromProtected {
- 							value="disabled"
- 						}
- 					/>
+				hx-swap="transition:true"
+				hx-headers="js:{'X-TimeZone': Intl.DateTimeFormat().resolvedOptions().timeZone}"
+				class="rounded-xl flex flex-col gap-4 w-96 p-8"
+				action=""
+				method="post"
+			>
+				<label class="flex flex-col justify-start gap-2">
+					Email:
+					<input
+						class="input input-bordered bg-white"
+						type="email"
+						name="email"
+						required
+						autofocus
+						disabled?={ fromProtected }
+						if fromProtected {
+							value="disabled"
+						}
+					/>
+				</label>
+				<label class="flex flex-col justify-start gap-2 relative">
+					Password:
+					<input
+						class="input input-bordered bg-white"
+						type="password"
+						name="password"
+						required
+						minlength="6"
+						disabled?={ fromProtected }
+						if fromProtected {
+							value="disabled"
+						}
+					/>
 					<button
- 						title="View password"
- 						type="button"
- 						disabled?={ fromProtected }
- 						class="absolute top-12 right-3"
- 						_="on click if [type of previous <input/>] == 'password' then remove [@type=password] from previous <input/> then hide #eye then remove .hidden from #eye-slash else show #eye then add .hidden to #eye-slash then tell previous <input/> toggle [@type=password] end"
+						title="View password"
+						type="button"
+						disabled?={ fromProtected }
+						class="absolute top-12 right-3"
+						_="on click if [type of previous <input/>] == 'password' then remove [@type=password] from previous <input/> then hide #eye then remove .hidden from #eye-slash else show #eye then add .hidden to #eye-slash then tell previous <input/> toggle [@type=password] end"
 					>
 						<svg id="eye" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
 							<path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0"></path>
@@ -70,13 +70,13 @@ templ Login(fromProtected bool) {
 }
 
 templ LoginIndex(
-    title,
-    username string,
-    fromProtected bool,
-    isError bool,
+	title,
+	username string,
+	fromProtected bool,
+	isError bool,
 	errMsgs, sucMsgs []string,
-    cmp templ.Component,
-    ) {
+	cmp templ.Component,
+) {
 	@layout.Base(title, username, fromProtected, isError, errMsgs, sucMsgs) {
 		@cmp
 	}

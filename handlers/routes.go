@@ -13,7 +13,20 @@ import (
 func SetupRoutes(e *echo.Echo, ah *AuthHandler, ih *ImportHandler, lh *LocationHandler) {
 	e.GET("/", ah.flagsMiddleware(ah.homeHandler))
 
-	e.GET("/api/locations", lh.mapLocationsHandler)
+	csrf := middleware.CSRFWithConfig(middleware.CSRFConfig{
+		TokenLookup:    "header:X-CSRF-Token",
+		CookieName:     "csrf_token",
+		CookiePath:     "/",
+		CookieSameSite: http.SameSiteLaxMode,
+		ErrorHandler: func(err error, c echo.Context) error {
+			return c.JSON(http.StatusForbidden, map[string]string{"error": "invalid csrf token"})
+		},
+	})
+
+	e.GET("/api/locations", csrf(lh.mapLocationsHandler))
+	e.GET("/api/me", lh.meHandler)
+	e.POST("/api/locations/:id/edit", csrf(lh.updateLocationHandler))
+	e.DELETE("/api/locations/:id", csrf(lh.deleteLocationHandler))
 
 	e.GET("/register", ah.flagsMiddleware(ah.registerHandler))
 	e.POST("/register", ah.flagsMiddleware(ah.registerHandler))

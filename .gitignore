@@ -8,5 +8,4 @@ db/sqlc
 **/*_templ.go
 assets/css/main.css
 
-tailwind/node_modules
-js/node_modules
+frontend/node_modules

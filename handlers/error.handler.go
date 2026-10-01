@@ -29,6 +29,8 @@ func CustomHTTPErrorHandler(err error, c echo.Context) {
 		errorPage = errors_pages.Error401
 	case 404:
 		errorPage = errors_pages.Error404
+	case 405:
+		errorPage = errors_pages.Error404
 	case 500:
 		errorPage = errors_pages.Error500
 	default:
@@ -40,6 +42,9 @@ func CustomHTTPErrorHandler(err error, c echo.Context) {
 
 	fromProtected, _ := c.Get("FROMPROTECTED").(bool)
 
+	c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextHTML)
+	c.Response().WriteHeader(code)
+
 	renderView(c, errors_pages.ErrorIndex(
 		fmt.Sprintf("| Error (%d)", code),
 		"",
@@ -50,7 +55,8 @@ func CustomHTTPErrorHandler(err error, c echo.Context) {
 }
 
 func RouteNotFoundHandler(c echo.Context) error {
-	// Hardcoded parameters
+	c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextHTML)
+	c.Response().WriteHeader(http.StatusNotFound)
 
 	return renderView(c, errors_pages.ErrorIndex(
 		fmt.Sprintf("| Error (%d)", 404),

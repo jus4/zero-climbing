@@ -24,39 +24,3 @@ in pkgs.mkShell {
     export PATH=$GOROOT/bin:$GOPATH/bin:$PATH
   '';
 }
-
-
-
-
-
-
-
-# { pkgs? import <nixpkgs> {} }:
-#
-#
-# let unstable = import (builtins.fetchTarball {
-#   url = "https://github.com/NixOS/nixpkgs/archive/nixos-unstable.tar.gz";
-# }) { };
-#
-# pkgs.mkShell {
-#   buildInputs = with pkgs; [
-#     go
-#     gcc
-#     glibc.dev
-#
-#     # Golang extra
-#     pkgs.air
-#     pkgs.templ
-#     pkgs.sqlc
-#     pkgs.pgloader
-#     # pkgs.postgresql
-#     # pkgs.postgresql_16
-#     (unstable.postgresql_17)
-#     pkgs.sqlitebrowser
-#   ];
-#
-#   shellHook = ''
-#     export CGO_ENABLED=1
-#     export PATH=$GOROOT/bin:$GOPATH/bin:$PATH
-#   '';
-# }
