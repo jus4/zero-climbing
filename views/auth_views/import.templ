@@ -115,26 +115,28 @@ templ ImportPreview(token string, candidates []services.ImportCandidate) {
 
 templ ImportFormIndex(
 	title,
-	username string,
+	username,
+	email string,
 	fromProtected,
 	isError bool,
 	errMsgs, sucMsgs []string,
 	cmp templ.Component,
 ) {
-	@layout.Base(title, username, fromProtected, isError, errMsgs, sucMsgs) {
+	@layout.Base(title, username, email, fromProtected, isError, errMsgs, sucMsgs) {
 		@cmp
 	}
 }
 
 templ ImportPreviewIndex(
 	title,
-	username string,
+	username,
+	email string,
 	fromProtected,
 	isError bool,
 	errMsgs, sucMsgs []string,
 	cmp templ.Component,
 ) {
-	@layout.Base(title, username, fromProtected, isError, errMsgs, sucMsgs) {
+	@layout.Base(title, username, email, fromProtected, isError, errMsgs, sucMsgs) {
 		@cmp
 	}
 }

@@ -8,13 +8,14 @@ templ Home(fromProtected bool) {
 
 templ HomeIndex(
 	title,
-	username string,
+	username,
+	email string,
 	fromProtected bool,
 	isError bool,
 	errMsgs, sucMsgs []string,
 	cmp templ.Component,
 ) {
-	@layout.Base(title, username, fromProtected, isError, errMsgs, sucMsgs) {
+	@layout.Base(title, username, email, fromProtected, isError, errMsgs, sucMsgs) {
 		@cmp
 	}
 }

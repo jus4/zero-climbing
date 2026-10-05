@@ -28,10 +28,13 @@ func SetupRoutes(e *echo.Echo, ah *AuthHandler, ih *ImportHandler, lh *LocationH
 	e.POST("/api/locations/:id/edit", csrf(lh.updateLocationHandler))
 	e.DELETE("/api/locations/:id", csrf(lh.deleteLocationHandler))
 
-	e.GET("/register", ah.flagsMiddleware(ah.registerHandler))
-	e.POST("/register", ah.flagsMiddleware(ah.registerHandler))
 	e.GET("/login", ah.flagsMiddleware(ah.loginHandler))
-	e.POST("/login", ah.flagsMiddleware(ah.loginHandler))
+
+	e.GET("/auth/google", ah.flagsMiddleware(ah.googleLoginHandler))
+	e.GET("/auth/google/callback", ah.googleCallbackHandler)
+
+	e.GET("/onboarding", ah.flagsMiddleware(ah.onboardingPageHandler))
+	e.POST("/onboarding", ah.flagsMiddleware(ah.onboardingSubmitHandler))
 
 	e.POST("/logout", ah.authMiddleware(ah.logoutHandler))
 

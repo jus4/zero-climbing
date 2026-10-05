@@ -1,6 +1,6 @@
 package partials
 
-templ Navbar(username string, fromProtected bool) {
+templ Navbar(username, email string, fromProtected bool) {
 <nav class="navbar bg-white border-b border-slate-200 text-slate-700 fixed top-0 z-10">
 		<div class="navbar-start">
 			<a hx-swap="transition:true" class="btn btn-ghost text-xl text-slate-900" href="/">
@@ -9,9 +9,16 @@ templ Navbar(username string, fromProtected bool) {
 		</div>
 		<div class="navbar-end">
 			if fromProtected {
-				<span class="font-bold text-slate-700 mr-8">
-					{ username }
-				</span>
+				<div class="flex flex-col items-end mr-4">
+					<span class="font-bold text-slate-700 leading-tight">
+						{ username }
+					</span>
+					if email != "" {
+						<span class="text-xs text-slate-400 leading-tight">
+							{ email }
+						</span>
+					}
+				</div>
 				<button
  					hx-swap="transition:true"
    					hx-post="/logout"
@@ -38,13 +45,10 @@ hx-target="body"
  				>
  					Logout
  				</button>
- 			} else {
- 				<a hx-swap="transition:true" class="btn btn-ghost text-lg text-slate-700" href="/register">
- 					Register
- 				</a>
- 				<a hx-swap="transition:true" class="btn btn-ghost text-lg text-slate-700" href="/login">
- 					Login
- 				</a>
+			} else {
+				<a hx-swap="transition:true" class="btn btn-ghost text-lg text-slate-700" href="/login">
+					Login
+				</a>
 			}
 		</div>
 	</nav>
