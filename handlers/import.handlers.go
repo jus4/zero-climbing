@@ -44,9 +44,12 @@ func (ih *ImportHandler) importPageHandler(c echo.Context) error {
 	importView := auth_views.ImportForm(fromProtected)
 	c.Set("ISERROR", false)
 
+	username, email := userDisplay(c)
+
 	return renderView(c, auth_views.ImportFormIndex(
 		"| Import",
-		"",
+		username,
+		email,
 		fromProtected,
 		c.Get("ISERROR").(bool),
 		getFlashmessages(c, "error"),
@@ -112,9 +115,12 @@ func (ih *ImportHandler) importPreviewHandler(c echo.Context) error {
 	previewView := auth_views.ImportPreview(token, candidates)
 	c.Set("ISERROR", false)
 
+	username, email := userDisplay(c)
+
 	return renderView(c, auth_views.ImportPreviewIndex(
 		"| Review import",
-		"",
+		username,
+		email,
 		fromProtected,
 		c.Get("ISERROR").(bool),
 		getFlashmessages(c, "error"),

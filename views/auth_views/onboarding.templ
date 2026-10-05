@@ -1,0 +1,56 @@
+package auth_views
+
+import "github.com/jus4/zero-climbing/views/layout"
+
+templ Onboarding(email string, fromProtected bool) {
+	<section class="card w-fit bg-white border border-slate-200 shadow-sm mx-auto mb-8 mt-8">
+		<div class="card-body pb-2">
+			<h1 class="card-title border-b border-b-slate-200 pb-[4px]">
+				Choose a username
+			</h1>
+			<form
+				hx-boost="false"
+				class="rounded-xl flex flex-col gap-4 w-96 p-8"
+				action="/onboarding"
+				method="post"
+			>
+				<p class="text-slate-600">
+					You are signing in as <span class="font-semibold text-slate-700">{ email }</span>.
+					Pick a public username for your account.
+				</p>
+				<label class="flex flex-col justify-start gap-2">
+					Username:
+					<input
+						class="input input-bordered bg-white"
+						type="text"
+						name="username"
+						required
+						autofocus
+						minlength="4"
+						maxlength="64"
+						autocomplete="username"
+					/>
+				</label>
+				<footer class="card-actions justify-end">
+					<button class="btn btn-neutral">
+						Continue
+					</button>
+				</footer>
+			</form>
+		</div>
+	</section>
+}
+
+templ OnboardingIndex(
+	title,
+	username,
+	email string,
+	fromProtected bool,
+	isError bool,
+	errMsgs, sucMsgs []string,
+	cmp templ.Component,
+) {
+	@layout.Base(title, username, email, fromProtected, isError, errMsgs, sucMsgs) {
+		@cmp
+	}
+}

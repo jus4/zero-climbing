@@ -2,7 +2,7 @@ package layout
 
 import "github.com/jus4/zero-climbing/views/partials"
 
-templ Base(title, username string, fromProtected, isError bool, errMsgs, sucMsgs []string) {
+templ Base(title, username, email string, fromProtected, isError bool, errMsgs, sucMsgs []string) {
 	<!DOCTYPE html>
 	<html lang="en">
 		<head>
@@ -24,7 +24,7 @@ templ Base(title, username string, fromProtected, isError bool, errMsgs, sucMsgs
 		<body class="sample-transition min-h-screen flex flex-col" hx-boost="true">
 			<header>
 				if !isError {
-					@partials.Navbar(username, fromProtected)
+					@partials.Navbar(username, email, fromProtected)
 				}
 			</header>
 			@partials.FlashMessages(errMsgs, sucMsgs)

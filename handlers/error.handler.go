@@ -48,6 +48,7 @@ func CustomHTTPErrorHandler(err error, c echo.Context) {
 	renderView(c, errors_pages.ErrorIndex(
 		fmt.Sprintf("| Error (%d)", code),
 		"",
+		"",
 		fromProtected,
 		c.Get("ISERROR").(bool),
 		errorPage(fromProtected),
@@ -60,6 +61,7 @@ func RouteNotFoundHandler(c echo.Context) error {
 
 	return renderView(c, errors_pages.ErrorIndex(
 		fmt.Sprintf("| Error (%d)", 404),
+		"",
 		"",
 		false,
 		true,

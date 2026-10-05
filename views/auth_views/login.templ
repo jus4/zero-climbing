@@ -8,76 +8,44 @@ templ Login(fromProtected bool) {
 			<h1 class="card-title border-b border-b-slate-200 pb-[4px]">
 				Log In
 			</h1>
-			<form
-				hx-swap="transition:true"
-				hx-headers="js:{'X-TimeZone': Intl.DateTimeFormat().resolvedOptions().timeZone}"
-				class="rounded-xl flex flex-col gap-4 w-96 p-8"
-				action=""
-				method="post"
-			>
-				<label class="flex flex-col justify-start gap-2">
-					Email:
-					<input
-						class="input input-bordered bg-white"
-						type="email"
-						name="email"
-						required
-						autofocus
-						disabled?={ fromProtected }
-						if fromProtected {
-							value="disabled"
-						}
-					/>
-				</label>
-				<label class="flex flex-col justify-start gap-2 relative">
-					Password:
-					<input
-						class="input input-bordered bg-white"
-						type="password"
-						name="password"
-						required
-						minlength="6"
-						disabled?={ fromProtected }
-						if fromProtected {
-							value="disabled"
-						}
-					/>
-					<button
-						title="View password"
-						type="button"
-						disabled?={ fromProtected }
-						class="absolute top-12 right-3"
-						_="on click if [type of previous <input/>] == 'password' then remove [@type=password] from previous <input/> then hide #eye then remove .hidden from #eye-slash else show #eye then add .hidden to #eye-slash then tell previous <input/> toggle [@type=password] end"
+			<div class="rounded-xl flex flex-col gap-4 w-96 p-8">
+				if fromProtected {
+					<p class="text-slate-600">
+						You are already signed in.
+					</p>
+				} else {
+					<p class="text-slate-600">
+						Sign in with your Google account to continue.
+					</p>
+					<a
+						href="/auth/google"
+						hx-boost="false"
+						class="btn btn-neutral w-full gap-2"
 					>
-						<svg id="eye" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-							<path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0"></path>
-							<path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8m8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7"></path>
+						<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 48 48">
+							<path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"></path>
+							<path fill="#FF3D00" d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"></path>
+							<path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"></path>
+							<path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"></path>
 						</svg>
-						<svg id="eye-slash" class="hidden" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-							<path d="m10.79 12.912-1.614-1.615a3.5 3.5 0 0 1-4.474-4.474l-2.06-2.06C.938 6.278 0 8 0 8s3 5.5 8 5.5a7 7 0 0 0 2.79-.588M5.21 3.088A7 7 0 0 1 8 2.5c5 0 8 5.5 8 5.5s-.939 1.721-2.641 3.238l-2.062-2.062a3.5 3.5 0 0 0-4.474-4.474z"></path>
-							<path d="M5.525 7.646a2.5 2.5 0 0 0 2.829 2.829zm4.95.708-2.829-2.83a2.5 2.5 0 0 1 2.829 2.829zm3.171 6-12-12 .708-.708 12 12z"></path>
-						</svg>
-					</button>
-				</label>
-				<footer class="card-actions justify-end">
-					<button class="btn btn-neutral" disabled?={ fromProtected }>
-						Sign In
-					</button>
-				</footer>
-			</form>
+						Sign in with Google
+					</a>
+				}
+			</div>
 		</div>
 	</section>
 }
 
 templ LoginIndex(
 	title,
-	username string,
+	username,
+	email string,
 	fromProtected bool,
 	isError bool,
 	errMsgs, sucMsgs []string,
 	cmp templ.Component,
 ) {
-	@layout.Base(title, username, fromProtected, isError, errMsgs, sucMsgs) {
+	@layout.Base(title, username, email, fromProtected, isError, errMsgs, sucMsgs) {
 		@cmp
 	}
 }
