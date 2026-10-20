@@ -6,7 +6,9 @@ RUN apk add --no-cache ca-certificates
 COPY go.mod go.sum ./
 RUN go mod download
 RUN go install github.com/pressly/goose/v3/cmd/goose@v3.26.0
+RUN go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.30.0
 COPY . .
+RUN sqlc generate
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/api ./cmd/main.go
 
 FROM alpine:3.20
