@@ -385,6 +385,7 @@ func (h *APIHandler) frontendErrorURL(message string) string {
 		return h.frontendURL
 	}
 
+	u.Path = strings.TrimSuffix(u.Path, "/") + "/login"
 	q := u.Query()
 	q.Set("error", message)
 	u.RawQuery = q.Encode()
