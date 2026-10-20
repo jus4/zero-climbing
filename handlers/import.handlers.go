@@ -185,22 +185,36 @@ func getCandidates(token string) ([]services.ImportCandidate, bool) {
 	return candidates, ok
 }
 
-func filterSelected(candidates []services.ImportCandidate, selected []string) ([]services.ImportCandidate, error) {
+func selectCandidates(candidates []services.ImportCandidate, indices []int) []services.ImportCandidate {
 	byIndex := make(map[int]services.ImportCandidate, len(candidates))
 	for _, c := range candidates {
 		byIndex[c.Index] = c
 	}
 
+	seen := make(map[int]bool, len(indices))
 	var result []services.ImportCandidate
+	for _, idx := range indices {
+		if seen[idx] {
+			continue
+		}
+		if item, ok := byIndex[idx]; ok {
+			seen[idx] = true
+			result = append(result, item)
+		}
+	}
+
+	return result
+}
+
+func filterSelected(candidates []services.ImportCandidate, selected []string) ([]services.ImportCandidate, error) {
+	indices := make([]int, 0, len(selected))
 	for _, s := range selected {
 		idx, err := strconv.Atoi(s)
 		if err != nil {
 			return nil, fmt.Errorf("invalid selection: %q", s)
 		}
-		if item, ok := byIndex[idx]; ok {
-			result = append(result, item)
-		}
+		indices = append(indices, idx)
 	}
 
-	return result, nil
+	return selectCandidates(candidates, indices), nil
 }
