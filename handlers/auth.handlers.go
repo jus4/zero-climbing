@@ -93,11 +93,7 @@ func (ah *AuthHandler) flagsMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		sess, _ := session.Get(auth_sessions_key, c)
 
 		if sess.IsNew {
-			sess.Options = &sessions.Options{
-				Path:     "/",
-				HttpOnly: true,
-				SameSite: http.SameSiteLaxMode,
-			}
+			sess.Options = sessionCookieOptions(0)
 			if err := sess.Save(c.Request(), c.Response()); err != nil {
 				c.Logger().Error(err)
 			}
@@ -154,11 +150,7 @@ func (ah *AuthHandler) logoutHandler(c echo.Context) error {
 
 func startSession(c echo.Context, user model.User, tzone string) error {
 	sess, _ := session.Get(auth_sessions_key, c)
-	sess.Options = &sessions.Options{
-		Path:     "/",
-		MaxAge:   3600,
-		HttpOnly: true,
-	}
+	sess.Options = sessionCookieOptions(3600)
 
 	sess.Values = map[interface{}]interface{}{
 		auth_key:    true,

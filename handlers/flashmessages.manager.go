@@ -8,13 +8,12 @@ import (
 // cookie name & flash messages key
 // this should be a .env file
 const (
-	session_name              string = "fmessages"
-	session_flashmessages_key string = "flashmessages-key"
+	session_name string = "fmessages"
 )
 
 func getCookieStore() *sessions.CookieStore {
 
-	return sessions.NewCookieStore([]byte(session_flashmessages_key))
+	return sessions.NewCookieStore(sessionSecret)
 }
 
 // Set adds a new message to the cookie store

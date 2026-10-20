@@ -1,0 +1,11 @@
+.git
+.gitignore
+tmp
+bin
+.env
+*.db
+frontend
+README.md
+LICENSE
+Dockerfile.api
+.dockerignore
