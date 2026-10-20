@@ -3,15 +3,19 @@ package handlers
 import (
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jus4/zero-climbing/services"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
+	"github.com/patrickmn/go-cache"
 	"golang.org/x/oauth2"
 )
 
@@ -19,14 +23,16 @@ import (
 type APIHandler struct {
 	users       AuthService
 	locations   LocationService
+	imports     ImportService
 	oauthCfg    *oauth2.Config
 	frontendURL string
 }
 
-func NewAPIHandler(users AuthService, locations LocationService, oauthCfg *oauth2.Config, frontendURL string) *APIHandler {
+func NewAPIHandler(users AuthService, locations LocationService, imports ImportService, oauthCfg *oauth2.Config, frontendURL string) *APIHandler {
 	return &APIHandler{
 		users:       users,
 		locations:   locations,
+		imports:     imports,
 		oauthCfg:    oauthCfg,
 		frontendURL: frontendURL,
 	}
@@ -290,6 +296,87 @@ func (h *APIHandler) DeleteLocation(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, map[string]bool{"ok": true})
+}
+
+func (h *APIHandler) ImportUpload(c echo.Context) error {
+	if _, _, ok := authenticatedUser(c); !ok {
+		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+	}
+
+	file, err := c.FormFile("file")
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "please choose a file to upload"})
+	}
+
+	if file.Size > maxUploadSize {
+		return c.JSON(http.StatusRequestEntityTooLarge, map[string]string{"error": "file is too large (max 50 MB)"})
+	}
+
+	tmp, err := os.CreateTemp("", "zero-climbing-import-*")
+	if err != nil {
+		c.Logger().Error(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "could not process upload")
+	}
+	defer os.Remove(tmp.Name())
+
+	src, err := file.Open()
+	if err != nil {
+		c.Logger().Error(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "could not read the uploaded file")
+	}
+	defer src.Close()
+
+	if _, err := io.Copy(tmp, src); err != nil {
+		c.Logger().Error(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "could not process upload")
+	}
+
+	candidates, err := services.ParseImportFile(tmp.Name(), file.Filename)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+	}
+
+	token := newImportToken()
+	importStore.Set(token, candidates, cache.DefaultExpiration)
+
+	return c.JSON(http.StatusOK, map[string]any{
+		"token":      token,
+		"candidates": candidates,
+	})
+}
+
+func (h *APIHandler) ImportConfirm(c echo.Context) error {
+	userID, _, ok := authenticatedUser(c)
+	if !ok {
+		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+	}
+
+	var req struct {
+		Token    string `json:"token"`
+		Selected []int  `json:"selected"`
+	}
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+	}
+
+	candidates, ok := getCandidates(req.Token)
+	if !ok {
+		return c.JSON(http.StatusGone, map[string]string{"error": "import session expired or not found, please upload the file again"})
+	}
+
+	toImport := selectCandidates(candidates, req.Selected)
+	if len(toImport) == 0 {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "no items selected"})
+	}
+
+	if err := h.imports.ImportLocations(c.Request().Context(), userID, toImport); err != nil {
+		c.Logger().Error(err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "import failed")
+	}
+
+	importStore.Delete(req.Token)
+
+	return c.JSON(http.StatusOK, map[string]int{"imported": len(toImport)})
 }
 
 func (h *APIHandler) frontendErrorURL(message string) string {

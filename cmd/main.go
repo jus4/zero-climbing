@@ -74,7 +74,7 @@ func main() {
 		apiOAuthCfg.RedirectURL = "http://localhost:8082/api/v1/auth/google/callback"
 	}
 
-	api := handlers.NewAPIHandler(um, ls, &apiOAuthCfg, frontendURL)
+	api := handlers.NewAPIHandler(um, ls, ls, &apiOAuthCfg, frontendURL)
 
 	handlers.SetupRoutes(e, ah, ih, lh, api)
 

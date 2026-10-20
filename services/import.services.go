@@ -14,12 +14,12 @@ import (
 )
 
 type ImportCandidate struct {
-	Index       int
-	Type        string
-	Title       string
-	Description string
-	Details     string
-	Geojson     json.RawMessage
+	Index       int             `json:"index"`
+	Type        string          `json:"type"`
+	Title       string          `json:"title"`
+	Description string          `json:"description"`
+	Details     string          `json:"details"`
+	Geojson     json.RawMessage `json:"geojson"`
 }
 
 func ParseImportFile(path, fileName string) ([]ImportCandidate, error) {
