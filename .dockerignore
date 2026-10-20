@@ -9,5 +9,3 @@ web/node_modules
 web/dist
 README.md
 LICENSE
-Dockerfile.api
-.dockerignore

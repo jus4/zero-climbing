@@ -109,15 +109,63 @@ db/
   migrations/   goose SQL migrations
   queries/      sqlc queries
   db.go         pgx pool setup
-handlers/       HTTP handlers and routes (auth, import, locations, errors)
+handlers/       HTTP handlers and routes (/api/v1 auth, locations, import, errors)
 services/       business logic (users, locations, import parsing)
-views/          templ templates (layout, nav, auth, import)
-assets/         static files (css, js, images)
-frontend/       map JS (TypeScript, esbuild) + Tailwind CSS build
-  src/          OpenLayers map source (map.ts, modules/)
-  base.css      Tailwind entry stylesheet
-  tailwind.config.cjs
+views/          templ templates (legacy HTML UI, removed in the SPA cutover)
+assets/         static files served by the API (legacy UI)
+web/            React + TypeScript SPA (Vite, TanStack Query, Tailwind)
+Dockerfile.api      Go API image (includes goose for migrations)
+Dockerfile.web      SPA image (Node build → nginx)
+Dockerfile.koyeb    Koyeb entrypoint (runs docker-compose)
+nginx.conf          SPA + /api + /proxy reverse proxy
+docker-compose.yml        local dev stack (postgres, migrate, api, web)
+docker-compose.koyeb.yml  Koyeb stack (managed Postgres, api, web)
 ```
+
+## Deployment
+
+### Local (docker compose)
+
+```sh
+cp .env.example .env   # set SESSION_SECRET, MAP_API_KEY, Google OAuth values
+docker compose up --build
+```
+
+This starts Postgres, runs goose migrations (`migrate` service), then the API and
+nginx. The app is served at <http://localhost:8080> (override with `WEB_PORT`).
+
+- SPA: <http://localhost:8080>
+- Health: <http://localhost:8080/healthz>
+- API: <http://localhost:8080/api/v1/...>
+
+### Koyeb (single service, docker-compose)
+
+1. Create a service from this GitHub repo.
+2. Builder: **Dockerfile** → location `Dockerfile.koyeb`; enable the **Privileged** flag.
+3. Expose the port Koyeb injects as `PORT` (e.g. `8000`) and set the health check path to `/healthz`.
+4. Configure environment/secrets (below). `DATABASE_URL` comes from Koyeb Managed Postgres.
+
+Koyeb runs `docker compose -f docker-compose.koyeb.yml up`; the `web` service binds
+`${PORT}` and proxies `/api` and `/proxy` to the API on the same origin (so cookie
+sessions work without CORS).
+
+#### Environment
+
+| Variable | Required | Notes |
+|---|---|---|
+| `DATABASE_URL` | yes | Koyeb Managed Postgres connection string |
+| `SESSION_SECRET` | yes | e.g. `openssl rand -hex 32`; used for session + CSRF cookies |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | yes | Google OAuth client |
+| `GOOGLE_REDIRECT_URL` | yes | legacy callback: `https://<domain>/auth/google/callback` |
+| `GOOGLE_API_REDIRECT_URL` | yes | SPA callback: `https://<domain>/api/v1/auth/google/callback` |
+| `FRONTEND_URL` | yes | public SPA origin, e.g. `https://<domain>` |
+| `MAP_API_KEY` | yes | Maanmittauslaitos API key |
+| `PORT` | injected | set by Koyeb; the exposed port |
+| `COOKIE_SECURE` | no | `true` in production (default `true` in the Koyeb compose) |
+| `COOKIE_DOMAIN` | no | set if serving from a custom domain |
+| `COOKIE_SAMESITE` | no | `lax` (default), `strict`, or `none` |
+
+Add both redirect URIs above to the Google OAuth client's authorized redirect URIs.
 
 ## License
 
