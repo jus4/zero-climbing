@@ -54,3 +54,17 @@ export function OnboardingRoute({ children }: { children: ReactNode }) {
 
   return <>{children}</>;
 }
+
+export function OnboardingRedirect({ children }: { children: ReactNode }) {
+  const { onboardingRequired, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <FullPageSpinner />;
+  }
+
+  if (onboardingRequired) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  return <>{children}</>;
+}

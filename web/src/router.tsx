@@ -1,6 +1,11 @@
 import { createBrowserRouter } from "react-router-dom";
 
-import { OnboardingRoute, ProtectedRoute, PublicOnlyRoute } from "./components/guards";
+import {
+  OnboardingRedirect,
+  OnboardingRoute,
+  ProtectedRoute,
+  PublicOnlyRoute,
+} from "./components/guards";
 import { RootLayout } from "./components/layout/RootLayout";
 import { ImportPage } from "./pages/ImportPage";
 import { LoginPage } from "./pages/LoginPage";
@@ -31,9 +36,9 @@ export const router = createBrowserRouter([
       {
         path: "/",
         element: (
-          <ProtectedRoute>
+          <OnboardingRedirect>
             <MapPage />
-          </ProtectedRoute>
+          </OnboardingRedirect>
         ),
       },
       {
