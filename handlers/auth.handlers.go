@@ -152,7 +152,7 @@ func (ah *AuthHandler) logoutHandler(c echo.Context) error {
 	return c.Redirect(http.StatusSeeOther, "/login")
 }
 
-func (ah *AuthHandler) startSession(c echo.Context, user model.User, tzone string) error {
+func startSession(c echo.Context, user model.User, tzone string) error {
 	sess, _ := session.Get(auth_sessions_key, c)
 	sess.Options = &sessions.Options{
 		Path:     "/",

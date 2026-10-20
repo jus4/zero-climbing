@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func SetupRoutes(e *echo.Echo, ah *AuthHandler, ih *ImportHandler, lh *LocationHandler) {
+func SetupRoutes(e *echo.Echo, ah *AuthHandler, ih *ImportHandler, lh *LocationHandler, api *APIHandler) {
 	e.GET("/", ah.flagsMiddleware(ah.homeHandler))
 
 	csrf := middleware.CSRFWithConfig(middleware.CSRFConfig{
@@ -27,6 +27,16 @@ func SetupRoutes(e *echo.Echo, ah *AuthHandler, ih *ImportHandler, lh *LocationH
 	e.GET("/api/me", lh.meHandler)
 	e.POST("/api/locations/:id/edit", csrf(lh.updateLocationHandler))
 	e.DELETE("/api/locations/:id", csrf(lh.deleteLocationHandler))
+
+	apiV1 := e.Group("/api/v1", csrf)
+	apiV1.GET("/auth/me", api.Me)
+	apiV1.GET("/auth/google", api.GoogleLogin)
+	apiV1.GET("/auth/google/callback", api.GoogleCallback)
+	apiV1.POST("/auth/username", api.Username)
+	apiV1.POST("/auth/logout", api.Logout)
+	apiV1.GET("/locations", api.Locations)
+	apiV1.PATCH("/locations/:id", api.UpdateLocation)
+	apiV1.DELETE("/locations/:id", api.DeleteLocation)
 
 	e.GET("/login", ah.flagsMiddleware(ah.loginHandler))
 

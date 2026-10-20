@@ -94,7 +94,7 @@ func (ah *AuthHandler) googleCallbackHandler(c echo.Context) error {
 
 	user, err := ah.UserModel.GetByEmail(ctx, info.Email)
 	if err == nil {
-		if err := ah.startSession(c, user, c.Request().Header.Get("X-Timezone")); err != nil {
+		if err := startSession(c, user, c.Request().Header.Get("X-Timezone")); err != nil {
 			c.Logger().Error(err)
 			return echo.NewHTTPError(echo.ErrInternalServerError.Code, "could not start session")
 		}
@@ -189,7 +189,7 @@ func (ah *AuthHandler) onboardingSubmitHandler(c echo.Context) error {
 		return echo.NewHTTPError(echo.ErrInternalServerError.Code, "could not create user")
 	}
 
-	if err := ah.startSession(c, user, c.Request().Header.Get("X-Timezone")); err != nil {
+	if err := startSession(c, user, c.Request().Header.Get("X-Timezone")); err != nil {
 		c.Logger().Error(err)
 		return echo.NewHTTPError(echo.ErrInternalServerError.Code, "could not start session")
 	}

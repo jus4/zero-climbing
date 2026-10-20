@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/jus4/zero-climbing/views/errors_pages"
 
@@ -11,11 +12,29 @@ import (
 )
 
 func CustomHTTPErrorHandler(err error, c echo.Context) {
+	if c.Response().Committed {
+		return
+	}
+
 	code := http.StatusInternalServerError
+	message := http.StatusText(code)
 	if he, ok := err.(*echo.HTTPError); ok {
 		code = he.Code
+		switch m := he.Message.(type) {
+		case string:
+			message = m
+		case nil:
+			message = http.StatusText(code)
+		default:
+			message = fmt.Sprintf("%v", m)
+		}
 	}
 	c.Logger().Error(err)
+
+	if strings.HasPrefix(c.Request().URL.Path, "/api/") {
+		c.JSON(code, map[string]string{"error": message})
+		return
+	}
 
 	/* errorPage := fmt.Sprintf("views/%d.html", code)
 	if err := c.File(errorPage); err != nil {
@@ -56,6 +75,10 @@ func CustomHTTPErrorHandler(err error, c echo.Context) {
 }
 
 func RouteNotFoundHandler(c echo.Context) error {
+	if strings.HasPrefix(c.Request().URL.Path, "/api/") {
+		return c.JSON(http.StatusNotFound, map[string]string{"error": "not found"})
+	}
+
 	c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextHTML)
 	c.Response().WriteHeader(http.StatusNotFound)
 
