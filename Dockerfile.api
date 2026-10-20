@@ -5,6 +5,7 @@ WORKDIR /src
 RUN apk add --no-cache ca-certificates
 COPY go.mod go.sum ./
 RUN go mod download
+RUN go install github.com/pressly/goose/v3/cmd/goose@v3.26.0
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/api ./cmd/main.go
 
@@ -12,6 +13,8 @@ FROM alpine:3.20
 RUN apk add --no-cache ca-certificates tzdata && adduser -D -u 10001 app
 WORKDIR /app
 COPY --from=build /out/api /app/api
+COPY --from=build /go/bin/goose /app/goose
+COPY --from=build /src/db/migrations /app/db/migrations
 COPY --from=build /src/assets /app/assets
 ENV PORT=8082
 EXPOSE 8082
