@@ -34,7 +34,11 @@ func main() {
 
 	e.Use(middleware.Logger())
 
-	e.Use(session.Middleware(sessions.NewCookieStore([]byte(SECRET_KEY))))
+	sessionSecret := os.Getenv("SESSION_SECRET")
+	if sessionSecret == "" {
+		sessionSecret = SECRET_KEY
+	}
+	e.Use(session.Middleware(sessions.NewCookieStore([]byte(sessionSecret))))
 
 	pool, err := db.NewPgxPool()
 	if err != nil {
@@ -59,7 +63,20 @@ func main() {
 	ih := handlers.NewImportHandler(ls)
 	lh := handlers.NewLocationHandler(ls)
 
-	handlers.SetupRoutes(e, ah, ih, lh)
+	frontendURL := os.Getenv("FRONTEND_URL")
+	if frontendURL == "" {
+		frontendURL = "http://localhost:5173"
+	}
+
+	apiOAuthCfg := *oauthCfg
+	apiOAuthCfg.RedirectURL = os.Getenv("GOOGLE_API_REDIRECT_URL")
+	if apiOAuthCfg.RedirectURL == "" {
+		apiOAuthCfg.RedirectURL = "http://localhost:8082/api/v1/auth/google/callback"
+	}
+
+	api := handlers.NewAPIHandler(um, ls, &apiOAuthCfg, frontendURL)
+
+	handlers.SetupRoutes(e, ah, ih, lh, api)
 
 	e.Logger.Fatal(e.Start(":8082"))
 }

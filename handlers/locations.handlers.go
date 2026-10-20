@@ -45,6 +45,10 @@ func (lh *LocationHandler) mapLocationsHandler(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "could not load locations"})
 	}
 
+	return c.JSON(http.StatusOK, buildFeatureCollection(locations))
+}
+
+func buildFeatureCollection(locations []services.Location) map[string]any {
 	features := make([]map[string]any, 0, len(locations))
 	for _, loc := range locations {
 		features = append(features, map[string]any{
@@ -60,10 +64,10 @@ func (lh *LocationHandler) mapLocationsHandler(c echo.Context) error {
 		})
 	}
 
-	return c.JSON(http.StatusOK, map[string]any{
+	return map[string]any{
 		"type":     "FeatureCollection",
 		"features": features,
-	})
+	}
 }
 
 func (lh *LocationHandler) meHandler(c echo.Context) error {
