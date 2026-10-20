@@ -1,21 +1,22 @@
 package handlers
 
 import (
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
-	"github.com/patrickmn/go-cache"
 	"io"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	"github.com/patrickmn/go-cache"
 )
 
-func SetupRoutes(e *echo.Echo, ah *AuthHandler, ih *ImportHandler, lh *LocationHandler, api *APIHandler) {
+var tileCache = cache.New(30*time.Minute, 1*time.Hour)
+
+func SetupRoutes(e *echo.Echo, api *APIHandler) {
 	e.GET("/healthz", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
 	})
-
-	e.GET("/", ah.flagsMiddleware(ah.homeHandler))
 
 	csrf := middleware.CSRFWithConfig(middleware.CSRFConfig{
 		TokenLookup:    "header:X-CSRF-Token",
@@ -29,11 +30,6 @@ func SetupRoutes(e *echo.Echo, ah *AuthHandler, ih *ImportHandler, lh *LocationH
 		},
 	})
 
-	e.GET("/api/locations", csrf(lh.mapLocationsHandler))
-	e.GET("/api/me", lh.meHandler)
-	e.POST("/api/locations/:id/edit", csrf(lh.updateLocationHandler))
-	e.DELETE("/api/locations/:id", csrf(lh.deleteLocationHandler))
-
 	apiV1 := e.Group("/api/v1", csrf)
 	apiV1.GET("/auth/me", api.Me)
 	apiV1.GET("/auth/google", api.GoogleLogin)
@@ -46,23 +42,7 @@ func SetupRoutes(e *echo.Echo, ah *AuthHandler, ih *ImportHandler, lh *LocationH
 	apiV1.POST("/import", api.ImportUpload, middleware.BodyLimit("50M"))
 	apiV1.POST("/import/confirm", api.ImportConfirm)
 
-	e.GET("/login", ah.flagsMiddleware(ah.loginHandler))
-
-	e.GET("/auth/google", ah.flagsMiddleware(ah.googleLoginHandler))
-	e.GET("/auth/google/callback", ah.googleCallbackHandler)
-
-	e.GET("/onboarding", ah.flagsMiddleware(ah.onboardingPageHandler))
-	e.POST("/onboarding", ah.flagsMiddleware(ah.onboardingSubmitHandler))
-
-	e.POST("/logout", ah.authMiddleware(ah.logoutHandler))
-
-	e.GET("/import", ah.authMiddleware(ih.importPageHandler))
-	e.POST("/import", ah.authMiddleware(ih.importUploadHandler), middleware.BodyLimit("50M"))
-	e.GET("/import/preview", ah.authMiddleware(ih.importPreviewHandler))
-	e.POST("/import/confirm", ah.authMiddleware(ih.importConfirmHandler))
-
 	e.GET("/proxy/wmts/*", func(c echo.Context) error {
-		var tileCache = cache.New(30*time.Minute, 1*time.Hour)
 		tilePath := c.Param("*")
 		cacheKey := tilePath
 		mapApiKey := os.Getenv("MAP_API_KEY")
@@ -94,9 +74,5 @@ func SetupRoutes(e *echo.Echo, ah *AuthHandler, ih *ImportHandler, lh *LocationH
 		}, cache.DefaultExpiration)
 
 		return c.Blob(resp.StatusCode, resp.Header.Get("Content-Type"), bodyBytes)
-
 	})
-
-	/* ↓ Fallback Page ↓ */
-	e.GET("/*", RouteNotFoundHandler)
 }

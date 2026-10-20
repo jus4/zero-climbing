@@ -4,7 +4,6 @@ tmp
 bin
 .env
 *.db
-frontend
 web/node_modules
 web/dist
 README.md

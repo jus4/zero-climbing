@@ -15,15 +15,11 @@ type CookieConfig struct {
 	SameSite http.SameSite
 }
 
-var (
-	sessionSecret []byte
-	cookieConfig  = CookieConfig{SameSite: http.SameSiteLaxMode}
-)
+var cookieConfig = CookieConfig{SameSite: http.SameSiteLaxMode}
 
-// Configure stores the process-wide session secret and cookie settings. It must
-// be called before routes are registered.
-func Configure(secret string, cookies CookieConfig) {
-	sessionSecret = []byte(secret)
+// Configure stores the process-wide cookie settings. It must be called before
+// routes are registered.
+func Configure(cookies CookieConfig) {
 	cookieConfig = cookies
 }
 

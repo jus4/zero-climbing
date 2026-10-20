@@ -5,7 +5,3 @@ bin
 
 app_data.db
 db/sqlc
-**/*_templ.go
-assets/css/main.css
-
-frontend/node_modules

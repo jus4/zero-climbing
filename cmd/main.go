@@ -42,15 +42,13 @@ func main() {
 		port = defaultPort
 	}
 
-	handlers.Configure(sessionSecret, handlers.CookieConfig{
+	handlers.Configure(handlers.CookieConfig{
 		Secure:   strings.EqualFold(os.Getenv("COOKIE_SECURE"), "true"),
 		Domain:   os.Getenv("COOKIE_DOMAIN"),
 		SameSite: parseSameSite(os.Getenv("COOKIE_SAMESITE")),
 	})
 
 	e := echo.New()
-
-	e.Static("/static", "assets")
 
 	e.HTTPErrorHandler = handlers.CustomHTTPErrorHandler
 
@@ -75,11 +73,7 @@ func main() {
 	}
 
 	um := model.NewUserModel(queries)
-	ah := handlers.NewAuthHandler(um, oauthCfg)
-
 	ls := services.NewLocationServices(pool, queries)
-	ih := handlers.NewImportHandler(ls)
-	lh := handlers.NewLocationHandler(ls)
 
 	frontendURL := os.Getenv("FRONTEND_URL")
 	if frontendURL == "" {
@@ -94,7 +88,7 @@ func main() {
 
 	api := handlers.NewAPIHandler(um, ls, ls, &apiOAuthCfg, frontendURL)
 
-	handlers.SetupRoutes(e, ah, ih, lh, api)
+	handlers.SetupRoutes(e, api)
 
 	go func() {
 		if err := e.Start(":" + port); err != nil && !errors.Is(err, http.ErrServerClosed) {
