@@ -11,13 +11,19 @@ import (
 )
 
 func SetupRoutes(e *echo.Echo, ah *AuthHandler, ih *ImportHandler, lh *LocationHandler, api *APIHandler) {
+	e.GET("/healthz", func(c echo.Context) error {
+		return c.JSON(http.StatusOK, map[string]string{"status": "ok"})
+	})
+
 	e.GET("/", ah.flagsMiddleware(ah.homeHandler))
 
 	csrf := middleware.CSRFWithConfig(middleware.CSRFConfig{
 		TokenLookup:    "header:X-CSRF-Token",
 		CookieName:     "csrf_token",
 		CookiePath:     "/",
-		CookieSameSite: http.SameSiteLaxMode,
+		CookieDomain:   cookieConfig.Domain,
+		CookieSecure:   cookieConfig.Secure,
+		CookieSameSite: cookieConfig.SameSite,
 		ErrorHandler: func(err error, c echo.Context) error {
 			return c.JSON(http.StatusForbidden, map[string]string{"error": "invalid csrf token"})
 		},
