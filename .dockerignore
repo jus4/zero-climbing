@@ -1,0 +1,10 @@
+.git
+.gitignore
+tmp
+bin
+.env
+*.db
+web/node_modules
+web/dist
+README.md
+LICENSE

@@ -10,7 +10,6 @@ in pkgs.mkShell {
     gcc
     glibc.dev
     air
-    templ
     sqlc
     pgloader
     sqlitebrowser

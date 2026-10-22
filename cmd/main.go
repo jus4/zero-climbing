@@ -1,6 +1,16 @@
 package main
 
 import (
+	"context"
+	"errors"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"strings"
+	"syscall"
+	"time"
+
 	"github.com/gorilla/sessions"
 	"github.com/joho/godotenv"
 	"github.com/jus4/zero-climbing/db"
@@ -13,28 +23,38 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
-	"log"
-	"os"
 )
 
-const (
-	SECRET_KEY string = "secret"
-)
+const defaultPort = "8082"
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
+	if err := godotenv.Load(); err != nil {
 		log.Print("Error loading .env file")
 	}
-	e := echo.New()
 
-	e.Static("/static", "assets")
+	sessionSecret := os.Getenv("SESSION_SECRET")
+	if sessionSecret == "" {
+		log.Fatal("SESSION_SECRET is required")
+	}
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = defaultPort
+	}
+
+	handlers.Configure(handlers.CookieConfig{
+		Secure:   strings.EqualFold(os.Getenv("COOKIE_SECURE"), "true"),
+		Domain:   os.Getenv("COOKIE_DOMAIN"),
+		SameSite: parseSameSite(os.Getenv("COOKIE_SAMESITE")),
+	})
+
+	e := echo.New()
 
 	e.HTTPErrorHandler = handlers.CustomHTTPErrorHandler
 
 	e.Use(middleware.Logger())
 
-	e.Use(session.Middleware(sessions.NewCookieStore([]byte(SECRET_KEY))))
+	e.Use(session.Middleware(sessions.NewCookieStore([]byte(sessionSecret))))
 
 	pool, err := db.NewPgxPool()
 	if err != nil {
@@ -53,13 +73,47 @@ func main() {
 	}
 
 	um := model.NewUserModel(queries)
-	ah := handlers.NewAuthHandler(um, oauthCfg)
-
 	ls := services.NewLocationServices(pool, queries)
-	ih := handlers.NewImportHandler(ls)
-	lh := handlers.NewLocationHandler(ls)
 
-	handlers.SetupRoutes(e, ah, ih, lh)
+	frontendURL := os.Getenv("FRONTEND_URL")
+	if frontendURL == "" {
+		frontendURL = "http://localhost:5173"
+	}
 
-	e.Logger.Fatal(e.Start(":8082"))
+	apiOAuthCfg := *oauthCfg
+	apiOAuthCfg.RedirectURL = os.Getenv("GOOGLE_API_REDIRECT_URL")
+	if apiOAuthCfg.RedirectURL == "" {
+		apiOAuthCfg.RedirectURL = "http://localhost:8082/api/v1/auth/google/callback"
+	}
+
+	api := handlers.NewAPIHandler(um, ls, ls, &apiOAuthCfg, frontendURL)
+
+	handlers.SetupRoutes(e, api)
+
+	go func() {
+		if err := e.Start(":" + port); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			e.Logger.Fatalf("shutting down the server: %s", err)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	<-quit
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := e.Shutdown(ctx); err != nil {
+		e.Logger.Fatal(err)
+	}
+}
+
+func parseSameSite(value string) http.SameSite {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "strict":
+		return http.SameSiteStrictMode
+	case "none":
+		return http.SameSiteNoneMode
+	default:
+		return http.SameSiteLaxMode
+	}
 }
