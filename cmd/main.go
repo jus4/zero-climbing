@@ -90,6 +90,8 @@ func main() {
 
 	handlers.SetupRoutes(e, api)
 
+	handlers.RegisterStatic(e, os.Getenv("STATIC_DIR"))
+
 	go func() {
 		if err := e.Start(":" + port); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			e.Logger.Fatalf("shutting down the server: %s", err)

@@ -19,10 +19,6 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-      - name: Install sqlc
-        run: go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.30.0
-      - name: Generate sqlc code
-        run: sqlc generate
       - name: Build
         run: CGO_ENABLED=0 go build ./...
       - name: Vet

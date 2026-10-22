@@ -1,24 +1,41 @@
 # syntax=docker/dockerfile:1
 
+FROM node:24-alpine AS web
+WORKDIR /web
+COPY web/package.json web/package-lock.json ./
+RUN npm ci
+COPY web/ ./
+RUN npm run build
+
 FROM golang:1.25-alpine AS build
 WORKDIR /src
 RUN apk add --no-cache ca-certificates
 COPY go.mod go.sum ./
 RUN go mod download
-RUN go install github.com/pressly/goose/v3/cmd/goose@v3.26.0
-RUN go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.30.0
 COPY . .
-RUN sqlc generate
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/api ./cmd/main.go
+
+FROM alpine:3.20 AS goose
+ARG TARGETARCH
+RUN apk add --no-cache curl
+RUN case "$TARGETARCH" in \
+      amd64) GOOSE_ARCH=x86_64 ;; \
+      arm64) GOOSE_ARCH=arm64 ;; \
+      *) GOOSE_ARCH="$TARGETARCH" ;; \
+    esac && \
+    curl -fsSL "https://github.com/pressly/goose/releases/download/v3.26.0/goose_linux_${GOOSE_ARCH}" -o /goose && \
+    chmod +x /goose
 
 FROM alpine:3.20
 RUN apk add --no-cache ca-certificates tzdata && adduser -D -u 10001 app
 WORKDIR /app
 COPY --from=build /out/api /app/api
-COPY --from=build /go/bin/goose /app/goose
+COPY --from=goose /goose /app/goose
 COPY --from=build /src/db/migrations /app/db/migrations
 COPY --from=build /src/api-entrypoint.sh /app/api-entrypoint.sh
+COPY --from=web /web/dist /app/dist
 ENV PORT=8082
+ENV STATIC_DIR=/app/dist
 EXPOSE 8082
 USER app
 ENTRYPOINT ["sh", "/app/api-entrypoint.sh"]

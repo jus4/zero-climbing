@@ -1,7 +1,0 @@
-# Koyeb builds this image and runs Docker Compose inside it.
-# Deploy with the builder set to Dockerfile and the location set to
-# Dockerfile.koyeb, with the Privileged flag enabled, exposing the PORT
-# that Koyeb injects.
-FROM koyeb/docker-compose
-COPY . /app
-CMD ["sh", "/app/koyeb-start.sh"]

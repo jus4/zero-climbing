@@ -1,4 +1,7 @@
-# Compose file used by the Koyeb deployment (see Dockerfile.koyeb).
+# Legacy docker-compose variant for Koyeb, kept for reference.
+#
+# The supported deployment builds Dockerfile.api directly as a native Koyeb
+# service (see README). This file runs the API via docker-compose instead.
 #
 # Koyeb provides/injects:
 #   - PORT (the exposed port)

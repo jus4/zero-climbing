@@ -16,7 +16,7 @@ A map of places where there's no climbing to be found. Mark and share locations 
 - **Database:** PostgreSQL (migrations via goose, queries via sqlc); SQLite files are read during import via `modernc.org/sqlite`
 - **Frontend:** React + TypeScript SPA (`web/`) built with Vite, React Router, TanStack Query, Tailwind CSS, OpenLayers
 - **Map tiles:** Maanmittauslaitos WMTS proxy (requires an API key), cached in memory with `go-cache`
-- **Deploy:** single origin behind nginx (SPA + `/api` + `/proxy`), packaged with Docker Compose
+- **Deploy:** one Go service serves the API and the built SPA (same origin, no nginx); containerized with a multi-stage `Dockerfile.api`
 
 ## Requirements
 
@@ -92,7 +92,7 @@ Open <http://localhost:5173>.
 Alternatively, run the whole stack with Docker:
 
 ```sh
-docker compose up --build   # http://localhost:8080
+docker compose up --build   # http://localhost:8082
 ```
 
 ### Development
@@ -128,19 +128,22 @@ cmd/            entrypoint (main.go)
 db/
   migrations/   goose SQL migrations
   queries/      sqlc queries
+  sqlc/         generated sqlc code (committed)
   db.go         pgx pool setup
-handlers/       HTTP handlers and routes (/api/v1 auth, locations, import, errors)
+handlers/       HTTP handlers and routes (/api/v1 auth, locations, import, static, errors)
 services/       business logic (users, locations, import parsing)
 web/            React + TypeScript SPA (Vite, TanStack Query, Tailwind)
-Dockerfile.api      Go API image (includes goose for migrations)
-Dockerfile.web      SPA image (Node build → nginx)
-Dockerfile.koyeb    Koyeb entrypoint (runs docker-compose)
-nginx.conf          SPA + /api + /proxy reverse proxy
-docker-compose.yml        local dev stack (postgres, api, web)
-docker-compose.koyeb.yml  Koyeb stack (managed Postgres, api; web TODO)
+Dockerfile.api            Go API image; also builds and serves the SPA
+docker-compose.yml        local dev stack (postgres, api)
+docker-compose.koyeb.yml  legacy Koyeb docker-compose (kept for reference)
 ```
 
 ## Deployment
+
+The API and the SPA are served by one Go binary: `Dockerfile.api` builds `web/`
+and the Go binary, and the server serves the SPA from `/` with an `index.html`
+fallback (`handlers/static.go`). Everything is same-origin, so session and CSRF
+cookies work without CORS.
 
 ### Local (docker compose)
 
@@ -150,53 +153,42 @@ docker compose up --build
 ```
 
 This starts Postgres, then the API (which runs goose migrations on startup) and
-nginx. The app is served at <http://localhost:8080> (override with `WEB_PORT`).
+serves the SPA at <http://localhost:8082>.
 
-- SPA: <http://localhost:8080>
-- Health: <http://localhost:8080/healthz>
-- API: <http://localhost:8080/api/v1/...>
+- SPA: <http://localhost:8082>
+- Health: <http://localhost:8082/healthz>
+- API: <http://localhost:8082/api/v1/...>
 
-### Koyeb (single service, docker-compose)
+### Koyeb (single native service)
 
 1. Create a service from this GitHub repo.
-2. Builder: **Dockerfile** → location `Dockerfile.koyeb`; enable the **Privileged** flag.
-3. Expose the port Koyeb injects as `PORT` (e.g. `8000`) and set the health check path to `/healthz`.
-4. Configure environment/secrets (below). `DATABASE_URL` comes from Koyeb Managed Postgres.
+2. Builder: **Dockerfile** → location `Dockerfile.api`. **Privileged: off.**
+3. Expose `PORT` (e.g. `8000`) and set the health check to HTTP `/healthz`.
+4. Set environment/secrets (below). `DATABASE_URL` comes from Koyeb Managed Postgres.
 
-> **Current state:** `docker-compose.koyeb.yml` deploys **only the API** while the
-> backend startup is being validated on a small instance; the nginx/SPA service
-> will be re-added afterwards. Migrations run from the API container's
-> entrypoint (`api-entrypoint.sh`), so there is no separate migration service.
-
-Koyeb runs `docker compose -f docker-compose.koyeb.yml up`; the `web` service binds
-`${PORT}` and proxies `/api` and `/proxy` to the API on the same origin (so cookie
-sessions work without CORS).
-
-Because the compose build pulls base images from Docker Hub inside the container
-(shared Koyeb egress IP), set `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` to avoid
-anonymous pull rate limits (HTTP 429). The token is a Docker Hub **access token**
-(read-only is enough); `koyeb-start.sh` logs in before running compose and skips
-login if the variables are unset.
+Koyeb builds the image (Go + Node + goose) and the instance runs the API, applies
+migrations, and serves the SPA — no Docker-in-Docker.
 
 #### Environment
 
 | Variable | Required | Notes |
 |---|---|---|
-| `DATABASE_URL` | yes | Koyeb Managed Postgres connection string |
-| `SESSION_SECRET` | yes | e.g. `openssl rand -hex 32`; used for session + CSRF cookies |
+| `DATABASE_URL` | yes | Koyeb Managed Postgres connection string (`?sslmode=require`) |
+| `SESSION_SECRET` | yes | e.g. `openssl rand -hex 32`; session + CSRF cookies |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | yes | Google OAuth client |
-| `GOOGLE_REDIRECT_URL` | yes | legacy callback: `https://<domain>/auth/google/callback` |
-| `GOOGLE_API_REDIRECT_URL` | yes | SPA callback: `https://<domain>/api/v1/auth/google/callback` |
-| `FRONTEND_URL` | yes | public SPA origin, e.g. `https://<domain>` |
+| `GOOGLE_API_REDIRECT_URL` | yes | `https://<domain>/api/v1/auth/google/callback` |
+| `FRONTEND_URL` | yes | public origin, e.g. `https://<domain>` |
 | `MAP_API_KEY` | yes | Maanmittauslaitos API key |
-| `PORT` | injected | set by Koyeb; the exposed port |
-| `DOCKERHUB_USERNAME` | recommended | Docker Hub username; used only by the compose runner |
-| `DOCKERHUB_TOKEN` | recommended | Docker Hub access token (secret); avoids anonymous pull limits |
-| `COOKIE_SECURE` | no | `true` in production (default `true` in the Koyeb compose) |
-| `COOKIE_DOMAIN` | no | set if serving from a custom domain |
+| `PORT` | injected | set by Koyeb |
+| `STATIC_DIR` | no | path to the built SPA; baked as `/app/dist` |
+| `COOKIE_SECURE` | no | `true` in production |
+| `COOKIE_DOMAIN` | no | set for a custom domain |
 | `COOKIE_SAMESITE` | no | `lax` (default), `strict`, or `none` |
 
-Add both redirect URIs above to the Google OAuth client's authorized redirect URIs.
+Add the redirect URI above to the Google OAuth client's authorized redirect URIs.
+
+> `docker-compose.koyeb.yml` is a legacy docker-compose variant kept for
+> reference; the supported deployment is the native `Dockerfile.api` service above.
 
 ## License
 
