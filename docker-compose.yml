@@ -15,24 +15,6 @@ services:
       timeout: 5s
       retries: 10
 
-  migrate:
-    build:
-      context: .
-      dockerfile: Dockerfile.api
-    entrypoint: ["/app/goose"]
-    command:
-      [
-        "-dir",
-        "/app/db/migrations",
-        "postgres",
-        "postgres://zero_climbing:zero_climbing@postgres:5432/zero_climbing?sslmode=disable",
-        "up",
-      ]
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: "no"
-
   api:
     build:
       context: .
@@ -54,8 +36,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      migrate:
-        condition: service_completed_successfully
 
   web:
     build:

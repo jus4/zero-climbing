@@ -1,20 +1,18 @@
 # Compose file used by the Koyeb deployment (see Dockerfile.koyeb).
 #
-# Koyeb provides:
-#   - PORT (the port the web service must listen on / be exposed on)
+# Koyeb provides/injects:
+#   - PORT (the exposed port)
 #   - secrets: DATABASE_URL, SESSION_SECRET, GOOGLE_CLIENT_ID,
-#     GOOGLE_CLIENT_SECRET, MAP_API_KEY
-#   - values: GOOGLE_REDIRECT_URL, GOOGLE_API_REDIRECT_URL, FRONTEND_URL
-#     (must point at the public Koyeb domain)
+#     GOOGLE_CLIENT_SECRET, MAP_API_KEY, DOCKERHUB_* (optional)
+#   - values: GOOGLE_REDIRECT_URL, GOOGLE_API_REDIRECT_URL, FRONTEND_URL,
+#     COOKIE_* (must point at the public Koyeb domain)
+#
+# Migrations run automatically from the API container's entrypoint.
+#
+# TEMPORARY: only the API service is enabled to isolate backend startup on a
+# small instance. The `web` (nginx) service and same-origin proxy will be
+# restored once the backend is confirmed to run.
 services:
-  migrate:
-    build:
-      context: .
-      dockerfile: Dockerfile.api
-    entrypoint: ["/app/goose"]
-    command: ["-dir", "/app/db/migrations", "postgres", "${DATABASE_URL}", "up"]
-    restart: "no"
-
   api:
     build:
       context: .
@@ -32,15 +30,5 @@ services:
       COOKIE_SECURE: ${COOKIE_SECURE:-true}
       COOKIE_DOMAIN: ${COOKIE_DOMAIN:-}
       COOKIE_SAMESITE: ${COOKIE_SAMESITE:-lax}
-    depends_on:
-      migrate:
-        condition: service_completed_successfully
-
-  web:
-    build:
-      context: .
-      dockerfile: Dockerfile.web
     ports:
-      - "${PORT}:80"
-    depends_on:
-      - api
+      - "${PORT}:8082"

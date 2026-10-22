@@ -136,8 +136,8 @@ Dockerfile.api      Go API image (includes goose for migrations)
 Dockerfile.web      SPA image (Node build → nginx)
 Dockerfile.koyeb    Koyeb entrypoint (runs docker-compose)
 nginx.conf          SPA + /api + /proxy reverse proxy
-docker-compose.yml        local dev stack (postgres, migrate, api, web)
-docker-compose.koyeb.yml  Koyeb stack (managed Postgres, api, web)
+docker-compose.yml        local dev stack (postgres, api, web)
+docker-compose.koyeb.yml  Koyeb stack (managed Postgres, api; web TODO)
 ```
 
 ## Deployment
@@ -149,7 +149,7 @@ cp .env.example .env   # set SESSION_SECRET, MAP_API_KEY, Google OAuth values
 docker compose up --build
 ```
 
-This starts Postgres, runs goose migrations (`migrate` service), then the API and
+This starts Postgres, then the API (which runs goose migrations on startup) and
 nginx. The app is served at <http://localhost:8080> (override with `WEB_PORT`).
 
 - SPA: <http://localhost:8080>
@@ -162,6 +162,11 @@ nginx. The app is served at <http://localhost:8080> (override with `WEB_PORT`).
 2. Builder: **Dockerfile** → location `Dockerfile.koyeb`; enable the **Privileged** flag.
 3. Expose the port Koyeb injects as `PORT` (e.g. `8000`) and set the health check path to `/healthz`.
 4. Configure environment/secrets (below). `DATABASE_URL` comes from Koyeb Managed Postgres.
+
+> **Current state:** `docker-compose.koyeb.yml` deploys **only the API** while the
+> backend startup is being validated on a small instance; the nginx/SPA service
+> will be re-added afterwards. Migrations run from the API container's
+> entrypoint (`api-entrypoint.sh`), so there is no separate migration service.
 
 Koyeb runs `docker compose -f docker-compose.koyeb.yml up`; the `web` service binds
 `${PORT}` and proxies `/api` and `/proxy` to the API on the same origin (so cookie
