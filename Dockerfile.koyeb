@@ -4,4 +4,4 @@
 # that Koyeb injects.
 FROM koyeb/docker-compose
 COPY . /app
-CMD ["docker", "compose", "-f", "docker-compose.koyeb.yml", "up"]
+CMD ["sh", "/app/koyeb-start.sh"]

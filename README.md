@@ -167,6 +167,12 @@ Koyeb runs `docker compose -f docker-compose.koyeb.yml up`; the `web` service bi
 `${PORT}` and proxies `/api` and `/proxy` to the API on the same origin (so cookie
 sessions work without CORS).
 
+Because the compose build pulls base images from Docker Hub inside the container
+(shared Koyeb egress IP), set `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` to avoid
+anonymous pull rate limits (HTTP 429). The token is a Docker Hub **access token**
+(read-only is enough); `koyeb-start.sh` logs in before running compose and skips
+login if the variables are unset.
+
 #### Environment
 
 | Variable | Required | Notes |
@@ -179,6 +185,8 @@ sessions work without CORS).
 | `FRONTEND_URL` | yes | public SPA origin, e.g. `https://<domain>` |
 | `MAP_API_KEY` | yes | Maanmittauslaitos API key |
 | `PORT` | injected | set by Koyeb; the exposed port |
+| `DOCKERHUB_USERNAME` | recommended | Docker Hub username; used only by the compose runner |
+| `DOCKERHUB_TOKEN` | recommended | Docker Hub access token (secret); avoids anonymous pull limits |
 | `COOKIE_SECURE` | no | `true` in production (default `true` in the Koyeb compose) |
 | `COOKIE_DOMAIN` | no | set if serving from a custom domain |
 | `COOKIE_SAMESITE` | no | `lax` (default), `strict`, or `none` |
