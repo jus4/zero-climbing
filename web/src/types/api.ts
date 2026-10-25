@@ -8,6 +8,7 @@ export type Me = {
 export type LocationFeatureProperties = {
   title: string;
   description: string;
+  is_public: boolean;
   user: string;
   user_id: number;
 };
@@ -34,11 +35,17 @@ export type ImportCandidate = {
   description: string;
   details: string;
   geojson: unknown;
+  is_public: boolean;
 };
 
 export type ImportUploadResponse = {
   token: string;
   candidates: ImportCandidate[];
+};
+
+export type ImportSelection = {
+  index: number;
+  is_public: boolean;
 };
 
 export type ImportConfirmResponse = {

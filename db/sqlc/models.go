@@ -17,6 +17,7 @@ type Location struct {
 	Title       string             `json:"title"`
 	Description string             `json:"description"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	IsPublic    bool               `json:"is_public"`
 }
 
 type User struct {

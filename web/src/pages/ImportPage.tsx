@@ -6,7 +6,12 @@ import { Alert } from "../components/ui/Alert";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { ApiError, apiFetch } from "../lib/api";
-import type { ImportCandidate, ImportConfirmResponse, ImportUploadResponse } from "../types/api";
+import type {
+  ImportCandidate,
+  ImportConfirmResponse,
+  ImportSelection,
+  ImportUploadResponse,
+} from "../types/api";
 
 const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
 
@@ -15,6 +20,7 @@ export function ImportPage() {
   const [token, setToken] = useState<string | null>(null);
   const [candidates, setCandidates] = useState<ImportCandidate[]>([]);
   const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [visibility, setVisibility] = useState<Map<number, boolean>>(new Map());
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -27,7 +33,7 @@ export function ImportPage() {
   });
 
   const confirmMutation = useMutation({
-    mutationFn: (payload: { token: string; selected: number[] }) =>
+    mutationFn: (payload: { token: string; selection: ImportSelection[] }) =>
       apiFetch<ImportConfirmResponse>("/import/confirm", { method: "POST", body: payload }),
   });
 
@@ -53,6 +59,9 @@ export function ImportPage() {
         setToken(data.token);
         setCandidates(data.candidates);
         setSelected(new Set(data.candidates.map((candidate) => candidate.index)));
+        setVisibility(
+          new Map(data.candidates.map((candidate) => [candidate.index, candidate.is_public])),
+        );
       },
       onError: (err) =>
         setError(err instanceof ApiError ? err.message : "Could not parse the file."),
@@ -75,10 +84,19 @@ export function ImportPage() {
     setSelected(allSelected ? new Set() : new Set(candidates.map((candidate) => candidate.index)));
   }
 
+  function setPublic(index: number, isPublic: boolean) {
+    setVisibility((prev) => {
+      const next = new Map(prev);
+      next.set(index, isPublic);
+      return next;
+    });
+  }
+
   function reset() {
     setToken(null);
     setCandidates([]);
     setSelected(new Set());
+    setVisibility(new Map());
     setError(null);
     setNotice(null);
     confirmMutation.reset();
@@ -91,7 +109,13 @@ export function ImportPage() {
 
     setError(null);
     confirmMutation.mutate(
-      { token, selected: [...selected] },
+      {
+        token,
+        selection: [...selected].map((index) => ({
+          index,
+          is_public: visibility.get(index) ?? false,
+        })),
+      },
       {
         onSuccess: (data) => {
           setNotice(`Imported ${data.imported} location(s).`);
@@ -172,6 +196,7 @@ export function ImportPage() {
                   <th className="px-2 py-2">Title</th>
                   <th className="px-2 py-2">Description</th>
                   <th className="px-2 py-2">Details</th>
+                  <th className="px-2 py-2">Public</th>
                 </tr>
               </thead>
               <tbody>
@@ -194,6 +219,15 @@ export function ImportPage() {
                     <td className="px-2 py-2 font-medium text-slate-800">{candidate.title}</td>
                     <td className="px-2 py-2 text-slate-500">{candidate.description}</td>
                     <td className="px-2 py-2 text-slate-500">{candidate.details}</td>
+                    <td className="px-2 py-2">
+                      <input
+                        type="checkbox"
+                        checked={visibility.get(candidate.index) ?? false}
+                        onChange={(event) => setPublic(candidate.index, event.target.checked)}
+                        aria-label={`Make ${candidate.title} public`}
+                        className="h-4 w-4 rounded border-slate-300"
+                      />
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -23,6 +23,7 @@ type Location struct {
 	Geojson     json.RawMessage `json:"geojson"`
 	Title       string          `json:"title"`
 	Description string          `json:"description"`
+	IsPublic    bool            `json:"is_public"`
 	Username    string          `json:"username"`
 }
 
@@ -31,10 +32,10 @@ type LocationServices struct {
 	queries *sqlc.Queries
 }
 
-func (s *LocationServices) GetPointLocations(ctx context.Context) ([]Location, error) {
-	rows, err := s.queries.GetPointLocations(ctx)
+func (s *LocationServices) GetPublicPointLocations(ctx context.Context) ([]Location, error) {
+	rows, err := s.queries.GetPublicPointLocations(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("get point locations: %w", err)
+		return nil, fmt.Errorf("get public point locations: %w", err)
 	}
 
 	locations := make([]Location, 0, len(rows))
@@ -45,6 +46,7 @@ func (s *LocationServices) GetPointLocations(ctx context.Context) ([]Location, e
 			Geojson:     row.Geojson,
 			Title:       row.Title,
 			Description: row.Description,
+			IsPublic:    row.IsPublic,
 			Username:    row.Alias,
 		})
 	}
@@ -52,12 +54,35 @@ func (s *LocationServices) GetPointLocations(ctx context.Context) ([]Location, e
 	return locations, nil
 }
 
-func (s *LocationServices) UpdateLocation(ctx context.Context, id, userID int64, title, description string) error {
+func (s *LocationServices) GetPrivatePointLocations(ctx context.Context, userID int64) ([]Location, error) {
+	rows, err := s.queries.GetPrivatePointLocationsByUser(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("get private point locations: %w", err)
+	}
+
+	locations := make([]Location, 0, len(rows))
+	for _, row := range rows {
+		locations = append(locations, Location{
+			ID:          row.ID,
+			UserID:      row.UserID,
+			Geojson:     row.Geojson,
+			Title:       row.Title,
+			Description: row.Description,
+			IsPublic:    row.IsPublic,
+			Username:    row.Alias,
+		})
+	}
+
+	return locations, nil
+}
+
+func (s *LocationServices) UpdateLocation(ctx context.Context, id, userID int64, title, description string, isPublic bool) error {
 	_, err := s.queries.UpdateLocation(ctx, sqlc.UpdateLocationParams{
 		ID:          id,
 		UserID:      userID,
 		Title:       title,
 		Description: description,
+		IsPublic:    isPublic,
 	})
 	if err != nil {
 		return fmt.Errorf("update location: %w", err)
@@ -94,6 +119,7 @@ func (s *LocationServices) ImportLocations(ctx context.Context, userID int64, it
 			Geojson:     item.Geojson,
 			Title:       item.Title,
 			Description: item.Description,
+			IsPublic:    item.IsPublic,
 		})
 		if err != nil {
 			return fmt.Errorf("create location: %w", err)

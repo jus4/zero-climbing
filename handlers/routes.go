@@ -37,6 +37,7 @@ func SetupRoutes(e *echo.Echo, api *APIHandler) {
 	apiV1.POST("/auth/username", api.Username)
 	apiV1.POST("/auth/logout", api.Logout)
 	apiV1.GET("/locations", api.Locations)
+	apiV1.GET("/locations/private", api.PrivateLocations)
 	apiV1.PATCH("/locations/:id", api.UpdateLocation)
 	apiV1.DELETE("/locations/:id", api.DeleteLocation)
 	apiV1.POST("/import", api.ImportUpload, middleware.BodyLimit("50M"))

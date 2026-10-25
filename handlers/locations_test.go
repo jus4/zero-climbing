@@ -14,6 +14,7 @@ func TestBuildFeatureCollection(t *testing.T) {
 			UserID:      3,
 			Title:       "Peak",
 			Description: "desc",
+			IsPublic:    true,
 			Username:    "alice",
 			Geojson:     json.RawMessage(`{"type":"Point","coordinates":[1,2]}`),
 		},
@@ -31,6 +32,11 @@ func TestBuildFeatureCollection(t *testing.T) {
 
 	if features[0]["id"] != int64(7) {
 		t.Fatalf("id = %v, want 7", features[0]["id"])
+	}
+
+	props, ok := features[0]["properties"].(map[string]any)
+	if !ok || props["is_public"] != true {
+		t.Fatalf("is_public = %v, want true", props["is_public"])
 	}
 }
 
