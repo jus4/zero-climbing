@@ -16,7 +16,7 @@ var importStore = cache.New(30*time.Minute, 1*time.Hour)
 const maxUploadSize = 50 << 20
 
 type ImportService interface {
-	ImportLocations(ctx context.Context, userID int64, items []services.ImportCandidate) error
+	ImportLocations(ctx context.Context, userID int64, items []services.ImportCandidate) (imported, skipped int, err error)
 }
 
 func newImportToken() string {

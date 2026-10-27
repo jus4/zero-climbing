@@ -118,7 +118,8 @@ export function ImportPage() {
       },
       {
         onSuccess: (data) => {
-          setNotice(`Imported ${data.imported} location(s).`);
+          const skipped = data.skipped > 0 ? ` Skipped ${data.skipped} duplicate(s).` : "";
+          setNotice(`Imported ${data.imported} location(s).${skipped}`);
           window.setTimeout(() => navigate("/"), 1200);
         },
         onError: (err) => setError(err instanceof ApiError ? err.message : "Import failed."),

@@ -17,7 +17,7 @@ import { useEffect, useRef, useState } from "react";
 import "ol/ol.css";
 
 import { proj4Config } from "../../map/proj4";
-import type { LocationFeature, LocationFeatureProperties } from "../../types/api";
+import type { LocationFeature } from "../../types/api";
 import { LayerSwitcher, type BaseLayerId } from "./LayerSwitcher";
 import { LocationPopup } from "./LocationPopup";
 
@@ -45,7 +45,6 @@ function locationStyle(feature: FeatureLike): Style {
 
 type SelectedLocation = {
   id: number;
-  properties: LocationFeatureProperties;
   coordinate: Coordinate;
 };
 
@@ -70,6 +69,10 @@ export function TerrainMap({ locations, currentUserId, onUpdate, onDelete }: Ter
 
   const [activeLayer, setActiveLayer] = useState<BaseLayerId>("maastokartta");
   const [selected, setSelected] = useState<SelectedLocation | null>(null);
+
+  const selectedFeature = selected
+    ? locations.find((location) => location.id === selected.id)
+    : undefined;
 
   useEffect(() => {
     if (!containerRef.current || !popupRef.current) {
@@ -127,7 +130,6 @@ export function TerrainMap({ locations, currentUserId, onUpdate, onDelete }: Ter
       if (feature && feature.getId() !== undefined) {
         setSelected({
           id: Number(feature.getId()),
-          properties: feature.getProperties() as LocationFeatureProperties,
           coordinate: event.coordinate,
         });
       } else {
@@ -184,11 +186,11 @@ export function TerrainMap({ locations, currentUserId, onUpdate, onDelete }: Ter
     <div ref={containerRef} className="relative h-full w-full">
       <LayerSwitcher active={activeLayer} onChange={setActiveLayer} />
       <div ref={popupRef}>
-        {selected && (
+        {selected && selectedFeature && (
           <LocationPopup
             key={selected.id}
             id={selected.id}
-            properties={selected.properties}
+            properties={selectedFeature.properties}
             currentUserId={currentUserId}
             onUpdate={onUpdate}
             onDelete={onDelete}

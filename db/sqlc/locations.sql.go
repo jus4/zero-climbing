@@ -12,13 +12,13 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const createLocation = `-- name: CreateLocation :one
+const createLocationIfNew = `-- name: CreateLocationIfNew :execrows
 INSERT INTO locations (user_id, geojson, title, description, is_public)
 VALUES ($1, $2, $3, $4, $5)
-RETURNING id, user_id, geojson, title, description, created_at, is_public
+ON CONFLICT (user_id, geojson) DO NOTHING
 `
 
-type CreateLocationParams struct {
+type CreateLocationIfNewParams struct {
 	UserID      int64           `json:"user_id"`
 	Geojson     json.RawMessage `json:"geojson"`
 	Title       string          `json:"title"`
@@ -26,25 +26,18 @@ type CreateLocationParams struct {
 	IsPublic    bool            `json:"is_public"`
 }
 
-func (q *Queries) CreateLocation(ctx context.Context, arg CreateLocationParams) (Location, error) {
-	row := q.db.QueryRow(ctx, createLocation,
+func (q *Queries) CreateLocationIfNew(ctx context.Context, arg CreateLocationIfNewParams) (int64, error) {
+	result, err := q.db.Exec(ctx, createLocationIfNew,
 		arg.UserID,
 		arg.Geojson,
 		arg.Title,
 		arg.Description,
 		arg.IsPublic,
 	)
-	var i Location
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.Geojson,
-		&i.Title,
-		&i.Description,
-		&i.CreatedAt,
-		&i.IsPublic,
-	)
-	return i, err
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const deleteLocation = `-- name: DeleteLocation :execrows
@@ -120,6 +113,7 @@ SELECT l.id, l.user_id, l.geojson, l.title, l.description, l.created_at, l.is_pu
 FROM locations l
 JOIN users u ON u.id = l.user_id
 WHERE l.geojson->>'type' = 'Point' AND l.is_public = false AND l.user_id = $1
+ORDER BY l.id
 `
 
 type GetPrivatePointLocationsByUserRow struct {
@@ -167,6 +161,7 @@ SELECT l.id, l.user_id, l.geojson, l.title, l.description, l.created_at, l.is_pu
 FROM locations l
 JOIN users u ON u.id = l.user_id
 WHERE l.geojson->>'type' = 'Point' AND l.is_public = true
+ORDER BY l.id
 `
 
 type GetPublicPointLocationsRow struct {
