@@ -222,7 +222,22 @@ func (h *APIHandler) Logout(c echo.Context) error {
 }
 
 func (h *APIHandler) Locations(c echo.Context) error {
-	locations, err := h.locations.GetPointLocations(c.Request().Context())
+	locations, err := h.locations.GetPublicPointLocations(c.Request().Context())
+	if err != nil {
+		c.Logger().Error(err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "could not load locations"})
+	}
+
+	return c.JSON(http.StatusOK, buildFeatureCollection(locations))
+}
+
+func (h *APIHandler) PrivateLocations(c echo.Context) error {
+	userID, _, ok := authenticatedUser(c)
+	if !ok {
+		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+	}
+
+	locations, err := h.locations.GetPrivatePointLocations(c.Request().Context(), userID)
 	if err != nil {
 		c.Logger().Error(err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "could not load locations"})
@@ -245,6 +260,7 @@ func (h *APIHandler) UpdateLocation(c echo.Context) error {
 	var req struct {
 		Title       string `json:"title"`
 		Description string `json:"description"`
+		IsPublic    bool   `json:"is_public"`
 	}
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid request body"})
@@ -263,7 +279,7 @@ func (h *APIHandler) UpdateLocation(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "description is too long"})
 	}
 
-	if err := h.locations.UpdateLocation(c.Request().Context(), id, userID, title, description); err != nil {
+	if err := h.locations.UpdateLocation(c.Request().Context(), id, userID, title, description, req.IsPublic); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return c.JSON(http.StatusNotFound, map[string]string{"error": "location not found"})
 		}
@@ -352,8 +368,8 @@ func (h *APIHandler) ImportConfirm(c echo.Context) error {
 	}
 
 	var req struct {
-		Token    string `json:"token"`
-		Selected []int  `json:"selected"`
+		Token     string            `json:"token"`
+		Selection []importSelection `json:"selection"`
 	}
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid request body"})
@@ -364,7 +380,7 @@ func (h *APIHandler) ImportConfirm(c echo.Context) error {
 		return c.JSON(http.StatusGone, map[string]string{"error": "import session expired or not found, please upload the file again"})
 	}
 
-	toImport := selectCandidates(candidates, req.Selected)
+	toImport := selectCandidates(candidates, req.Selection)
 	if len(toImport) == 0 {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "no items selected"})
 	}

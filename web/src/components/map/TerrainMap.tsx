@@ -11,6 +11,7 @@ import WMTSTileGrid from "ol/tilegrid/WMTS";
 import View from "ol/View";
 import type { Coordinate } from "ol/coordinate";
 import type Feature from "ol/Feature";
+import type { FeatureLike } from "ol/Feature";
 import { useEffect, useRef, useState } from "react";
 
 import "ol/ol.css";
@@ -22,13 +23,25 @@ import { LocationPopup } from "./LocationPopup";
 
 const proj = proj4Config.projection!;
 
-const pointStyle = new Style({
+const publicPointStyle = new Style({
+  image: new CircleStyle({
+    radius: 6,
+    fill: new Fill({ color: "#22c55e" }),
+    stroke: new Stroke({ color: "#ffffff", width: 1.5 }),
+  }),
+});
+
+const privatePointStyle = new Style({
   image: new CircleStyle({
     radius: 6,
     fill: new Fill({ color: "#ef4444" }),
     stroke: new Stroke({ color: "#ffffff", width: 1.5 }),
   }),
 });
+
+function locationStyle(feature: FeatureLike): Style {
+  return feature.get("is_public") === true ? publicPointStyle : privatePointStyle;
+}
 
 type SelectedLocation = {
   id: number;
@@ -39,7 +52,12 @@ type SelectedLocation = {
 type TerrainMapProps = {
   locations: LocationFeature[];
   currentUserId: number | null;
-  onUpdate: (input: { id: number; title: string; description: string }) => Promise<unknown>;
+  onUpdate: (input: {
+    id: number;
+    title: string;
+    description: string;
+    isPublic: boolean;
+  }) => Promise<unknown>;
   onDelete: (id: number) => Promise<unknown>;
 };
 
@@ -154,7 +172,7 @@ export function TerrainMap({ locations, currentUserId, onUpdate, onDelete }: Ter
         { featureProjection: proj },
       ),
     });
-    const layer = new VectorLayer({ source, style: pointStyle });
+    const layer = new VectorLayer({ source, style: locationStyle });
     map.addLayer(layer);
 
     return () => {

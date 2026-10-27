@@ -39,20 +39,26 @@ func getCandidates(token string) ([]services.ImportCandidate, bool) {
 	return candidates, ok
 }
 
-func selectCandidates(candidates []services.ImportCandidate, indices []int) []services.ImportCandidate {
+type importSelection struct {
+	Index    int  `json:"index"`
+	IsPublic bool `json:"is_public"`
+}
+
+func selectCandidates(candidates []services.ImportCandidate, selection []importSelection) []services.ImportCandidate {
 	byIndex := make(map[int]services.ImportCandidate, len(candidates))
 	for _, c := range candidates {
 		byIndex[c.Index] = c
 	}
 
-	seen := make(map[int]bool, len(indices))
+	seen := make(map[int]bool, len(selection))
 	var result []services.ImportCandidate
-	for _, idx := range indices {
-		if seen[idx] {
+	for _, sel := range selection {
+		if seen[sel.Index] {
 			continue
 		}
-		if item, ok := byIndex[idx]; ok {
-			seen[idx] = true
+		if item, ok := byIndex[sel.Index]; ok {
+			seen[sel.Index] = true
+			item.IsPublic = sel.IsPublic
 			result = append(result, item)
 		}
 	}

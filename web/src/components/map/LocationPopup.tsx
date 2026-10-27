@@ -10,7 +10,12 @@ type LocationPopupProps = {
   id: number;
   properties: LocationFeatureProperties;
   currentUserId: number | null;
-  onUpdate: (input: { id: number; title: string; description: string }) => Promise<unknown>;
+  onUpdate: (input: {
+    id: number;
+    title: string;
+    description: string;
+    isPublic: boolean;
+  }) => Promise<unknown>;
   onDelete: (id: number) => Promise<unknown>;
   onClose: () => void;
 };
@@ -26,6 +31,7 @@ export function LocationPopup({
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(properties.title);
   const [description, setDescription] = useState(properties.description);
+  const [isPublic, setIsPublic] = useState(properties.is_public);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -43,7 +49,7 @@ export function LocationPopup({
     setError(null);
     setSaving(true);
     try {
-      await onUpdate({ id, title: trimmedTitle, description: description.trim() });
+      await onUpdate({ id, title: trimmedTitle, description: description.trim(), isPublic });
       setEditing(false);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not save changes.");
@@ -96,6 +102,15 @@ export function LocationPopup({
             placeholder="Description"
             className="w-full resize-y rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
           />
+          <label className="flex items-center gap-2 text-xs font-medium text-slate-600">
+            <input
+              type="checkbox"
+              checked={isPublic}
+              onChange={(event) => setIsPublic(event.target.checked)}
+              className="h-4 w-4 rounded border-slate-300"
+            />
+            Public location
+          </label>
           <div className="flex justify-end gap-2">
             <button
               type="button"

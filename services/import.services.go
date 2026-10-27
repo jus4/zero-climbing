@@ -20,6 +20,7 @@ type ImportCandidate struct {
 	Description string          `json:"description"`
 	Details     string          `json:"details"`
 	Geojson     json.RawMessage `json:"geojson"`
+	IsPublic    bool            `json:"is_public"`
 }
 
 func ParseImportFile(path, fileName string) ([]ImportCandidate, error) {

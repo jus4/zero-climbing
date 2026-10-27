@@ -13,9 +13,9 @@ import (
 )
 
 const createLocation = `-- name: CreateLocation :one
-INSERT INTO locations (user_id, geojson, title, description)
-VALUES ($1, $2, $3, $4)
-RETURNING id, user_id, geojson, title, description, created_at
+INSERT INTO locations (user_id, geojson, title, description, is_public)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, user_id, geojson, title, description, created_at, is_public
 `
 
 type CreateLocationParams struct {
@@ -23,6 +23,7 @@ type CreateLocationParams struct {
 	Geojson     json.RawMessage `json:"geojson"`
 	Title       string          `json:"title"`
 	Description string          `json:"description"`
+	IsPublic    bool            `json:"is_public"`
 }
 
 func (q *Queries) CreateLocation(ctx context.Context, arg CreateLocationParams) (Location, error) {
@@ -31,6 +32,7 @@ func (q *Queries) CreateLocation(ctx context.Context, arg CreateLocationParams) 
 		arg.Geojson,
 		arg.Title,
 		arg.Description,
+		arg.IsPublic,
 	)
 	var i Location
 	err := row.Scan(
@@ -40,6 +42,7 @@ func (q *Queries) CreateLocation(ctx context.Context, arg CreateLocationParams) 
 		&i.Title,
 		&i.Description,
 		&i.CreatedAt,
+		&i.IsPublic,
 	)
 	return i, err
 }
@@ -62,7 +65,7 @@ func (q *Queries) DeleteLocation(ctx context.Context, arg DeleteLocationParams) 
 }
 
 const getLocationByID = `-- name: GetLocationByID :one
-SELECT id, user_id, geojson, title, description, created_at FROM locations WHERE id = $1 LIMIT 1
+SELECT id, user_id, geojson, title, description, created_at, is_public FROM locations WHERE id = $1 LIMIT 1
 `
 
 func (q *Queries) GetLocationByID(ctx context.Context, id int64) (Location, error) {
@@ -75,12 +78,13 @@ func (q *Queries) GetLocationByID(ctx context.Context, id int64) (Location, erro
 		&i.Title,
 		&i.Description,
 		&i.CreatedAt,
+		&i.IsPublic,
 	)
 	return i, err
 }
 
 const getLocationsByUserID = `-- name: GetLocationsByUserID :many
-SELECT id, user_id, geojson, title, description, created_at FROM locations WHERE user_id = $1 ORDER BY created_at DESC
+SELECT id, user_id, geojson, title, description, created_at, is_public FROM locations WHERE user_id = $1 ORDER BY created_at DESC
 `
 
 func (q *Queries) GetLocationsByUserID(ctx context.Context, userID int64) ([]Location, error) {
@@ -99,6 +103,7 @@ func (q *Queries) GetLocationsByUserID(ctx context.Context, userID int64) ([]Loc
 			&i.Title,
 			&i.Description,
 			&i.CreatedAt,
+			&i.IsPublic,
 		); err != nil {
 			return nil, err
 		}
@@ -110,32 +115,33 @@ func (q *Queries) GetLocationsByUserID(ctx context.Context, userID int64) ([]Loc
 	return items, nil
 }
 
-const getPointLocations = `-- name: GetPointLocations :many
-SELECT l.id, l.user_id, l.geojson, l.title, l.description, l.created_at, u.alias
+const getPrivatePointLocationsByUser = `-- name: GetPrivatePointLocationsByUser :many
+SELECT l.id, l.user_id, l.geojson, l.title, l.description, l.created_at, l.is_public, u.alias
 FROM locations l
 JOIN users u ON u.id = l.user_id
-WHERE l.geojson->>'type' = 'Point'
+WHERE l.geojson->>'type' = 'Point' AND l.is_public = false AND l.user_id = $1
 `
 
-type GetPointLocationsRow struct {
+type GetPrivatePointLocationsByUserRow struct {
 	ID          int64              `json:"id"`
 	UserID      int64              `json:"user_id"`
 	Geojson     json.RawMessage    `json:"geojson"`
 	Title       string             `json:"title"`
 	Description string             `json:"description"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	IsPublic    bool               `json:"is_public"`
 	Alias       string             `json:"alias"`
 }
 
-func (q *Queries) GetPointLocations(ctx context.Context) ([]GetPointLocationsRow, error) {
-	rows, err := q.db.Query(ctx, getPointLocations)
+func (q *Queries) GetPrivatePointLocationsByUser(ctx context.Context, userID int64) ([]GetPrivatePointLocationsByUserRow, error) {
+	rows, err := q.db.Query(ctx, getPrivatePointLocationsByUser, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []GetPointLocationsRow
+	var items []GetPrivatePointLocationsByUserRow
 	for rows.Next() {
-		var i GetPointLocationsRow
+		var i GetPrivatePointLocationsByUserRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
@@ -143,6 +149,54 @@ func (q *Queries) GetPointLocations(ctx context.Context) ([]GetPointLocationsRow
 			&i.Title,
 			&i.Description,
 			&i.CreatedAt,
+			&i.IsPublic,
+			&i.Alias,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPublicPointLocations = `-- name: GetPublicPointLocations :many
+SELECT l.id, l.user_id, l.geojson, l.title, l.description, l.created_at, l.is_public, u.alias
+FROM locations l
+JOIN users u ON u.id = l.user_id
+WHERE l.geojson->>'type' = 'Point' AND l.is_public = true
+`
+
+type GetPublicPointLocationsRow struct {
+	ID          int64              `json:"id"`
+	UserID      int64              `json:"user_id"`
+	Geojson     json.RawMessage    `json:"geojson"`
+	Title       string             `json:"title"`
+	Description string             `json:"description"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	IsPublic    bool               `json:"is_public"`
+	Alias       string             `json:"alias"`
+}
+
+func (q *Queries) GetPublicPointLocations(ctx context.Context) ([]GetPublicPointLocationsRow, error) {
+	rows, err := q.db.Query(ctx, getPublicPointLocations)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetPublicPointLocationsRow
+	for rows.Next() {
+		var i GetPublicPointLocationsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Geojson,
+			&i.Title,
+			&i.Description,
+			&i.CreatedAt,
+			&i.IsPublic,
 			&i.Alias,
 		); err != nil {
 			return nil, err
@@ -156,9 +210,9 @@ func (q *Queries) GetPointLocations(ctx context.Context) ([]GetPointLocationsRow
 }
 
 const updateLocation = `-- name: UpdateLocation :one
-UPDATE locations SET title = $3, description = $4
+UPDATE locations SET title = $3, description = $4, is_public = $5
 WHERE id = $1 AND user_id = $2
-RETURNING id, user_id, geojson, title, description, created_at
+RETURNING id, user_id, geojson, title, description, created_at, is_public
 `
 
 type UpdateLocationParams struct {
@@ -166,6 +220,7 @@ type UpdateLocationParams struct {
 	UserID      int64  `json:"user_id"`
 	Title       string `json:"title"`
 	Description string `json:"description"`
+	IsPublic    bool   `json:"is_public"`
 }
 
 func (q *Queries) UpdateLocation(ctx context.Context, arg UpdateLocationParams) (Location, error) {
@@ -174,6 +229,7 @@ func (q *Queries) UpdateLocation(ctx context.Context, arg UpdateLocationParams) 
 		arg.UserID,
 		arg.Title,
 		arg.Description,
+		arg.IsPublic,
 	)
 	var i Location
 	err := row.Scan(
@@ -183,6 +239,7 @@ func (q *Queries) UpdateLocation(ctx context.Context, arg UpdateLocationParams) 
 		&i.Title,
 		&i.Description,
 		&i.CreatedAt,
+		&i.IsPublic,
 	)
 	return i, err
 }

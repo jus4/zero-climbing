@@ -15,8 +15,9 @@ const (
 )
 
 type LocationService interface {
-	GetPointLocations(ctx context.Context) ([]services.Location, error)
-	UpdateLocation(ctx context.Context, id, userID int64, title, description string) error
+	GetPublicPointLocations(ctx context.Context) ([]services.Location, error)
+	GetPrivatePointLocations(ctx context.Context, userID int64) ([]services.Location, error)
+	UpdateLocation(ctx context.Context, id, userID int64, title, description string, isPublic bool) error
 	DeleteLocation(ctx context.Context, id, userID int64) error
 }
 
@@ -29,6 +30,7 @@ func buildFeatureCollection(locations []services.Location) map[string]any {
 			"properties": map[string]any{
 				"title":       loc.Title,
 				"description": loc.Description,
+				"is_public":   loc.IsPublic,
 				"user":        loc.Username,
 				"user_id":     loc.UserID,
 			},
