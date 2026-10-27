@@ -385,14 +385,15 @@ func (h *APIHandler) ImportConfirm(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "no items selected"})
 	}
 
-	if err := h.imports.ImportLocations(c.Request().Context(), userID, toImport); err != nil {
+	imported, skipped, err := h.imports.ImportLocations(c.Request().Context(), userID, toImport)
+	if err != nil {
 		c.Logger().Error(err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "import failed")
 	}
 
 	importStore.Delete(req.Token)
 
-	return c.JSON(http.StatusOK, map[string]int{"imported": len(toImport)})
+	return c.JSON(http.StatusOK, map[string]int{"imported": imported, "skipped": skipped})
 }
 
 func (h *APIHandler) frontendErrorURL(message string) string {

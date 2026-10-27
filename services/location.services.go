@@ -104,17 +104,19 @@ func (s *LocationServices) DeleteLocation(ctx context.Context, id, userID int64)
 	return nil
 }
 
-func (s *LocationServices) ImportLocations(ctx context.Context, userID int64, items []ImportCandidate) error {
+func (s *LocationServices) ImportLocations(ctx context.Context, userID int64, items []ImportCandidate) (int, int, error) {
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
-		return fmt.Errorf("begin tx: %w", err)
+		return 0, 0, fmt.Errorf("begin tx: %w", err)
 	}
 	defer tx.Rollback(ctx)
 
 	qtx := s.queries.WithTx(tx)
 
+	imported := 0
+	skipped := 0
 	for _, item := range items {
-		_, err := qtx.CreateLocation(ctx, sqlc.CreateLocationParams{
+		rows, err := qtx.CreateLocationIfNew(ctx, sqlc.CreateLocationIfNewParams{
 			UserID:      userID,
 			Geojson:     item.Geojson,
 			Title:       item.Title,
@@ -122,13 +124,18 @@ func (s *LocationServices) ImportLocations(ctx context.Context, userID int64, it
 			IsPublic:    item.IsPublic,
 		})
 		if err != nil {
-			return fmt.Errorf("create location: %w", err)
+			return 0, 0, fmt.Errorf("create location: %w", err)
 		}
+		if rows == 0 {
+			skipped++
+			continue
+		}
+		imported++
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return fmt.Errorf("commit tx: %w", err)
+		return 0, 0, fmt.Errorf("commit tx: %w", err)
 	}
 
-	return nil
+	return imported, skipped, nil
 }

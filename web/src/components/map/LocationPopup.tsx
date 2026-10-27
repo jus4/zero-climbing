@@ -39,6 +39,14 @@ export function LocationPopup({
 
   const isOwner = currentUserId !== null && currentUserId === properties.user_id;
 
+  function startEdit() {
+    setError(null);
+    setTitle(properties.title);
+    setDescription(properties.description);
+    setIsPublic(properties.is_public);
+    setEditing(true);
+  }
+
   async function handleSave() {
     const trimmedTitle = title.trim();
     if (!trimmedTitle) {
@@ -131,9 +139,11 @@ export function LocationPopup({
         </div>
       ) : (
         <div>
-          <div className="pr-4 text-[15px] font-semibold text-slate-900">{title || "Untitled"}</div>
+          <div className="pr-4 text-[15px] font-semibold text-slate-900">
+            {properties.title || "Untitled"}
+          </div>
           <div className="mt-1 whitespace-pre-wrap break-words text-[13px] text-slate-600">
-            {description || "No comments."}
+            {properties.description || "No comments."}
           </div>
           {properties.user && (
             <div className="mt-2 border-t border-slate-200 pt-2 text-xs text-slate-400">
@@ -145,10 +155,7 @@ export function LocationPopup({
             <div className="mt-3 flex gap-2 border-t border-slate-200 pt-3">
               <button
                 type="button"
-                onClick={() => {
-                  setError(null);
-                  setEditing(true);
-                }}
+                onClick={startEdit}
                 className="rounded-md bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-orange-400"
               >
                 Edit

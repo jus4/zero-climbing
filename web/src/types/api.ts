@@ -50,4 +50,5 @@ export type ImportSelection = {
 
 export type ImportConfirmResponse = {
   imported: number;
+  skipped: number;
 };
