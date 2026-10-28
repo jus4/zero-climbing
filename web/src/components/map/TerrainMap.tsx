@@ -1,7 +1,7 @@
 import GeoJSON from "ol/format/GeoJSON";
 import Map from "ol/Map";
 import Overlay from "ol/Overlay";
-import { getTopLeft } from "ol/extent";
+import { getTopLeft, getCenter } from "ol/extent";
 import TileLayer from "ol/layer/Tile";
 import VectorLayer from "ol/layer/Vector";
 import WMTS from "ol/source/WMTS";
@@ -12,7 +12,7 @@ import View from "ol/View";
 import type { Coordinate } from "ol/coordinate";
 import type Feature from "ol/Feature";
 import type { FeatureLike } from "ol/Feature";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback, type Ref, useImperativeHandle } from "react";
 
 import "ol/ol.css";
 
@@ -48,6 +48,10 @@ type SelectedLocation = {
   coordinate: Coordinate;
 };
 
+export type TerrainMapHandle = {
+  focusLocation: (id: number) => void;
+};
+
 type TerrainMapProps = {
   locations: LocationFeature[];
   currentUserId: number | null;
@@ -57,13 +61,25 @@ type TerrainMapProps = {
     description: string;
     isPublic: boolean;
   }) => Promise<unknown>;
+  ref?: Ref<TerrainMapHandle>;
+  onVisibleIdsChange: (ids: number[]) => void;
   onDelete: (id: number) => Promise<unknown>;
 };
 
-export function TerrainMap({ locations, currentUserId, onUpdate, onDelete }: TerrainMapProps) {
+export function TerrainMap({
+  locations,
+  currentUserId,
+  onUpdate,
+  onDelete,
+  onVisibleIdsChange,
+  ref,
+}: TerrainMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const popupRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<Map | null>(null);
+  const vectorSourceRef = useRef<VectorSource | null>(null);
+  const onVisibleIdsChangeRef = useRef(onVisibleIdsChange);
+  const lastVisibleKeyRef = useRef<string | null>(null);
   const baseLayersRef = useRef<Record<BaseLayerId, TileLayer<WMTS>> | null>(null);
   const overlayRef = useRef<Overlay | null>(null);
 
@@ -73,6 +89,61 @@ export function TerrainMap({ locations, currentUserId, onUpdate, onDelete }: Ter
   const selectedFeature = selected
     ? locations.find((location) => location.id === selected.id)
     : undefined;
+
+  useEffect(() => {
+    onVisibleIdsChangeRef.current = onVisibleIdsChange;
+  }, [onVisibleIdsChange]);
+  const updateVisibleFeatures = useCallback(() => {
+    const map = mapRef.current;
+    const source = vectorSourceRef.current;
+    const size = map?.getSize();
+    if (!map || !source || !size) {
+      return;
+    }
+    const extent = map.getView().calculateExtent(size);
+    const ids = source
+      .getFeaturesInExtent(extent)
+      .map((feature) => Number(feature.getId()))
+      .filter((id) => Number.isFinite(id));
+    // Avoid notifying the parent when the visible set did not change.
+    const key = ids.sort((a, b) => a - b).join(",");
+    if (key === lastVisibleKeyRef.current) {
+      return;
+    }
+    lastVisibleKeyRef.current = key;
+    onVisibleIdsChangeRef.current?.(ids);
+  }, []);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      focusLocation(id: number) {
+        const map = mapRef.current;
+        const source = vectorSourceRef.current;
+        if (!map || !source) {
+          return;
+        }
+        const feature = source.getFeatureById(id);
+        if (!feature || Array.isArray(feature)) {
+          return;
+        }
+        const geometry = feature.getGeometry();
+        if (!geometry) {
+          return;
+        }
+        const coordinate = getCenter(geometry.getExtent());
+        const view = map.getView();
+        view.animate({
+          center: coordinate,
+          zoom: Math.max(view.getZoom() ?? 12, 14),
+          duration: 300,
+        });
+        // Reuse the existing popup state.
+        setSelected({ id, coordinate });
+      },
+    }),
+    [],
+  );
 
   useEffect(() => {
     if (!containerRef.current || !popupRef.current) {
@@ -122,6 +193,9 @@ export function TerrainMap({ locations, currentUserId, onUpdate, onDelete }: Ter
     });
     mapRef.current = map;
 
+    map.on("moveend", updateVisibleFeatures);
+    map.on("change:size", updateVisibleFeatures);
+
     map.on("singleclick", (event) => {
       const feature = map.forEachFeatureAtPixel(event.pixel, (candidate) => candidate, {
         hitTolerance: 10,
@@ -139,11 +213,13 @@ export function TerrainMap({ locations, currentUserId, onUpdate, onDelete }: Ter
 
     return () => {
       map.setTarget(undefined);
+      map.un("moveend", updateVisibleFeatures);
+      map.un("change:size", updateVisibleFeatures);
       mapRef.current = null;
       baseLayersRef.current = null;
       overlayRef.current = null;
     };
-  }, []);
+  }, [updateVisibleFeatures]);
 
   useEffect(() => {
     const overlay = overlayRef.current;
@@ -174,13 +250,20 @@ export function TerrainMap({ locations, currentUserId, onUpdate, onDelete }: Ter
         { featureProjection: proj },
       ),
     });
+    vectorSourceRef.current = source;
     const layer = new VectorLayer({ source, style: locationStyle });
     map.addLayer(layer);
 
+    updateVisibleFeatures();
+    if (!map.getSize()) {
+      map.once("postrender", updateVisibleFeatures);
+    }
+
     return () => {
       map.removeLayer(layer);
+      vectorSourceRef.current = null;
     };
-  }, [locations]);
+  }, [locations, updateVisibleFeatures]);
 
   return (
     <div ref={containerRef} className="relative h-full w-full">
