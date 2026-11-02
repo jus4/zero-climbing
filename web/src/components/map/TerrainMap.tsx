@@ -6,7 +6,7 @@ import TileLayer from "ol/layer/Tile";
 import VectorLayer from "ol/layer/Vector";
 import WMTS from "ol/source/WMTS";
 import VectorSource from "ol/source/Vector";
-import { Circle as CircleStyle, Fill, Stroke, Style } from "ol/style";
+import { Icon, Style } from "ol/style";
 import WMTSTileGrid from "ol/tilegrid/WMTS";
 import View from "ol/View";
 import type { Coordinate } from "ol/coordinate";
@@ -18,26 +18,38 @@ import "ol/ol.css";
 
 import { proj4Config } from "../../map/proj4";
 import type { LocationFeature } from "../../types/api";
+import locationIconSvg from "../../../public/location_icon.svg?raw";
 import { LayerSwitcher, type BaseLayerId } from "./LayerSwitcher";
 import { LocationPopup } from "./LocationPopup";
 
 const proj = proj4Config.projection!;
 
-const publicPointStyle = new Style({
-  image: new CircleStyle({
-    radius: 6,
-    fill: new Fill({ color: "#22c55e" }),
-    stroke: new Stroke({ color: "#ffffff", width: 1.5 }),
-  }),
-});
+function createLocationIconSrc(color: string) {
+  const svg = locationIconSvg
+    .replace('fill="#ffffff"', `fill="${color}"`)
+    .replace(
+      "<g>",
+      '<defs><filter id="location-shadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="24" stdDeviation="18" flood-color="#000000" flood-opacity="0.35" /></filter></defs><g>',
+    )
+    .replace("<path ", '<path filter="url(#location-shadow)" stroke="#ffffff" stroke-width="14" ')
+    .replace("</svg>", '<circle cx="197.849" cy="137.329" r="49.191" fill="#ffffff" /></svg>');
 
-const privatePointStyle = new Style({
-  image: new CircleStyle({
-    radius: 6,
-    fill: new Fill({ color: "#ef4444" }),
-    stroke: new Stroke({ color: "#ffffff", width: 1.5 }),
-  }),
-});
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
+function createLocationPointStyle(color: string) {
+  return new Style({
+    image: new Icon({
+      src: createLocationIconSrc(color),
+      width: 32,
+      height: 32,
+      anchor: [0.5, 1],
+    }),
+  });
+}
+
+const publicPointStyle = createLocationPointStyle("#22c55e");
+const privatePointStyle = createLocationPointStyle("#ef4444");
 
 function locationStyle(feature: FeatureLike): Style {
   return feature.get("is_public") === true ? publicPointStyle : privatePointStyle;
@@ -212,9 +224,9 @@ export function TerrainMap({
     });
 
     return () => {
-      map.setTarget(undefined);
       map.un("moveend", updateVisibleFeatures);
       map.un("change:size", updateVisibleFeatures);
+      map.setTarget(undefined);
       mapRef.current = null;
       baseLayersRef.current = null;
       overlayRef.current = null;

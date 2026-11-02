@@ -43,8 +43,8 @@ export function MapPage() {
   );
 
   return (
-    <div className="flex h-[calc(100dvh-3.5rem)] w-full flex-col md:flex-row">
-      <div className="relative min-h-0 flex-1">
+    <div className="flex min-h-0 w-full flex-1 flex-col md:flex-row">
+      <div className="relative min-h-0 min-w-0 flex-1">
         {locations.isLoading && (
           <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/60">
             <Spinner className="h-8 w-8" />
@@ -60,7 +60,7 @@ export function MapPage() {
         />
       </div>
 
-      <aside className="h-64 shrink-0 overflow-y-auto border-t border-slate-200 bg-white md:h-auto md:w-80 md:border-l md:border-t-0">
+      <aside className="h-64 min-h-0 shrink-0 overflow-y-auto border-t border-slate-200 bg-white md:h-full md:w-80 md:border-l md:border-t-0">
         <VisibleLocationsList
           locations={visibleLocations}
           onSelect={(id) => mapRef.current?.focusLocation(id)}

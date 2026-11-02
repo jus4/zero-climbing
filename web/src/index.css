@@ -1,15 +1,16 @@
 @import "tailwindcss";
 
-@font-face {
-  font-family: "Kanit";
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-  src: url("/fonts/Kanit-Regular.ttf") format("truetype");
-}
-
 @theme {
-  --font-sans: "Kanit", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Roboto Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-heading: "Roboto Slab Variable", ui-serif, Georgia, Cambria, "Times New Roman", serif;
+
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
 }
 
 html,
@@ -18,6 +19,24 @@ body,
   min-height: 100%;
 }
 
-body {
-  margin: 0;
+@layer base {
+  body {
+    margin: 0;
+    background-color: #ffffff;
+    color: var(--color-slate-800);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    letter-spacing: -0.015em;
+  }
 }

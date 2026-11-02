@@ -9,9 +9,9 @@ export function VisibleLocationsList({ locations, onSelect }: VisibleLocationsLi
   return (
     <div className="flex h-full flex-col">
       <div className="border-b border-slate-200 px-4 py-3">
-        <h2 className="text-sm font-semibold text-slate-900">Visible locations</h2>
+        <h2 className="text-sm font-semibold text-slate-900">Näkyvät lokaatiot</h2>
         <p className="mt-0.5 text-xs text-slate-500">
-          {locations.length} location{locations.length === 1 ? "" : "s"} in this view
+          {locations.length} {locations.length === 1 ? "lokaatio" : "lokaatiota"} näkyvissä kartalla.
         </p>
       </div>
 
@@ -29,13 +29,12 @@ export function VisibleLocationsList({ locations, onSelect }: VisibleLocationsLi
                 <button
                   type="button"
                   onClick={() => onSelect(id)}
-                  className="flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-slate-50"
+                  className="flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-primary-50"
                 >
                   <span
                     aria-hidden="true"
-                    className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${
-                      properties.is_public ? "bg-green-500" : "bg-red-500"
-                    }`}
+                    className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${properties.is_public ? "bg-green-500" : "bg-red-500"
+                      }`}
                   />
                   <span className="min-w-0">
                     <span className="block truncate text-sm font-semibold text-slate-900">
