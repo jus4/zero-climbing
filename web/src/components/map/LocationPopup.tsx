@@ -85,7 +85,7 @@ export function LocationPopup({
         type="button"
         aria-label="Close"
         onClick={onClose}
-        className="absolute right-2 top-1 text-lg leading-none text-slate-400 transition hover:text-slate-600"
+        className="absolute right-2 top-1 text-lg leading-none text-slate-400 transition hover:text-primary-600"
       >
         ×
       </button>
@@ -108,14 +108,14 @@ export function LocationPopup({
             onChange={(event) => setDescription(event.target.value)}
             rows={3}
             placeholder="Description"
-            className="w-full resize-y rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-500 focus:ring-2 focus:ring-slate-200"
+            className="w-full resize-y rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
           />
           <label className="flex items-center gap-2 text-xs font-medium text-slate-600">
             <input
               type="checkbox"
               checked={isPublic}
               onChange={(event) => setIsPublic(event.target.checked)}
-              className="h-4 w-4 rounded border-slate-300"
+              className="h-4 w-4 rounded border-slate-300 accent-primary-600"
             />
             Public location
           </label>
@@ -123,7 +123,7 @@ export function LocationPopup({
             <button
               type="button"
               onClick={() => setEditing(false)}
-              className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-900 transition hover:bg-slate-50"
+              className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-primary-50"
             >
               Cancel
             </button>
@@ -131,7 +131,7 @@ export function LocationPopup({
               type="button"
               onClick={() => void handleSave()}
               disabled={saving}
-              className="rounded-md bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-md bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {saving ? "Saving..." : "Save"}
             </button>
@@ -156,7 +156,7 @@ export function LocationPopup({
               <button
                 type="button"
                 onClick={startEdit}
-                className="rounded-md bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-orange-400"
+                className="rounded-md bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-primary-700"
               >
                 Edit
               </button>

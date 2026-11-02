@@ -7,6 +7,7 @@ import {
   PublicOnlyRoute,
 } from "./components/guards";
 import { RootLayout } from "./components/layout/RootLayout";
+import { AboutPage } from "./pages/AboutPage";
 import { ImportPage } from "./pages/ImportPage";
 import { LoginPage } from "./pages/LoginPage";
 import { MapPage } from "./pages/MapPage";
@@ -17,6 +18,10 @@ export const router = createBrowserRouter([
   {
     element: <RootLayout />,
     children: [
+      {
+        path: "/about",
+        element: <AboutPage />,
+      },
       {
         path: "/login",
         element: (

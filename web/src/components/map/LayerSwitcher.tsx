@@ -19,7 +19,9 @@ export function LayerSwitcher({ active, onChange }: LayerSwitcherProps) {
           type="button"
           onClick={() => onChange(id)}
           className={`px-3 py-1.5 text-xs font-semibold transition ${
-            active === id ? "bg-slate-900 text-white" : "bg-white text-slate-700 hover:bg-slate-100"
+            active === id
+              ? "bg-primary-600 text-white"
+              : "bg-white text-slate-700 hover:bg-primary-50 hover:text-primary-700"
           }`}
         >
           {LABELS[id]}

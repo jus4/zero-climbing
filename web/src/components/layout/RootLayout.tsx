@@ -4,9 +4,9 @@ import { Navbar } from "./Navbar";
 
 export function RootLayout() {
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-800">
+    <div className="flex h-dvh flex-col bg-white text-slate-800">
       <Navbar />
-      <main className="flex-1">
+      <main className="flex min-h-0 flex-1 flex-col overflow-y-auto">
         <Outlet />
       </main>
     </div>

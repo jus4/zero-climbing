@@ -1,6 +1,9 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
+import "@fontsource-variable/roboto";
+import "@fontsource-variable/roboto-slab";
+
 import App from "./App.tsx";
 import "./index.css";
 
